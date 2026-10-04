@@ -48,8 +48,8 @@ run: ## Launch the Workbench web server on port 8080
 dev: run ## Alias for run
 
 deploy: ## Deploy application to Google Cloud Run
-	@echo "==> Deploying to Google Cloud Run via deploy.sh..."
-	./deploy.sh
+	@echo "==> Deploying to Google Cloud Run via scripts/deploy.sh..."
+	./scripts/deploy.sh
 
 docker-build: ## Build production Docker container image
 	docker build -t harness-engineering-demo .

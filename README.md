@@ -143,7 +143,7 @@ Open your browser to:
 
 Deploy directly from source with the included script:
 ```bash
-./deploy.sh
+./scripts/deploy.sh
 ```
 
 Or manually via `gcloud`:
@@ -176,4 +176,10 @@ gcloud run deploy harness-engineering-demo \
 | 2.4 | Semantic | Error & Remediation Clarity | Gemini LLM-as-a-Judge |
 | 2.5 | Semantic | Design Rationale & Intent | Gemini LLM-as-a-Judge |
 | 2.6 | Semantic | Progression Ergonomics & Interactivity | Explicit single-action sector card/tile affordance inspector |
+
+---
+
+## License
+
+This project is licensed under the terms of the [MIT License](LICENSE).
 

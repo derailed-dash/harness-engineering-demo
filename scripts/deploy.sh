@@ -3,6 +3,9 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
 SERVICE_NAME="harness-engineering-demo"
 REGION="${GCP_REGION:-us-central1}"
 MODEL_NAME="${MODEL_NAME:-gemini-3.8-flash}"
@@ -30,7 +33,7 @@ echo "Active Project: ${PROJECT_ID}"
 
 # Deploy directly via source build
 gcloud run deploy "${SERVICE_NAME}" \
-    --source . \
+    --source "${PROJECT_ROOT}" \
     --region "${REGION}" \
     --allow-unauthenticated \
     --set-env-vars "MODEL_NAME=${MODEL_NAME}" \
