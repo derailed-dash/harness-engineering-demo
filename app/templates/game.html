@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Trivia & Strategy Conquest</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #070a14;
+            --panel-bg: rgba(14, 20, 38, 0.88);
+            --border-color: #1e2a4a;
+            --neon-cyan: #00f2fe;
+            --neon-blue: #4facfe;
+            --neon-gold: #ffd200;
+            --neon-green: #00ff88;
+            --neon-red: #ff3366;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: radial-gradient(ellipse at bottom, #111b2e 0%, var(--bg-dark) 100%);
+            color: var(--text-main);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            padding: 24px;
+            position: relative;
+        }
+
+        /* Ambient Cosmic Starfield Background */
+        #stars-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        .header-title h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(90deg, var(--neon-blue) 0%, var(--neon-cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .header-title p {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        .btn-reset {
+            background: rgba(255, 51, 102, 0.15);
+            border: 1px solid var(--neon-red);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-reset:hover {
+            background: var(--neon-red);
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.4);
+            transform: translateY(-1px);
+        }
+
+        /* HUD Section */
+        .hud {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .hud-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 14px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+
+        .hud-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hud-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #fff;
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .shield-bar-bg {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .shield-bar-fill {
+            height: 100%;
+            width: 100%;
+            background: var(--neon-green);
+            transition: width 0.4s ease, background 0.4s ease;
+            box-shadow: 0 0 8px currentColor;
+        }
+
+        /* Star Map Grid */
+        .grid-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            padding: 0 4px;
+        }
+
+        .sector-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .sector-card {
+            background: rgba(14, 20, 38, 0.7);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .sector-name {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #fff;
+        }
+
+        .sector-badge {
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Controlled Sector */
+        .sector-card.controlled {
+            border-color: var(--neon-cyan);
+            background: rgba(0, 242, 254, 0.06);
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.2);
+            cursor: default;
+        }
+
+        .sector-card.controlled .sector-badge {
+            background: rgba(0, 242, 254, 0.15);
+            color: var(--neon-cyan);
+            border: 1px solid rgba(0, 242, 254, 0.35);
+        }
+
+        /* Attackable Sector (Active Target) */
+        .sector-card.target {
+            border-color: var(--neon-gold);
+            background: rgba(255, 210, 0, 0.08);
+            cursor: pointer;
+            animation: pulseGlow 1.8s infinite alternate;
+        }
+
+        .sector-card.target:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 0 25px rgba(255, 210, 0, 0.4);
+            border-color: #fff;
+        }
+
+        .sector-card.target .sector-badge {
+            background: rgba(255, 210, 0, 0.2);
+            color: var(--neon-gold);
+            border: 1px solid var(--neon-gold);
+        }
+
+        /* Locked Sector */
+        .sector-card.locked {
+            opacity: 0.45;
+            cursor: pointer;
+            border-color: #1a2238;
+        }
+
+        .sector-card.locked:hover {
+            opacity: 0.7;
+            border-color: var(--neon-red);
+        }
+
+        .sector-card.locked .sector-badge {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 6px rgba(255, 210, 0, 0.2); }
+            100% { box-shadow: 0 0 20px rgba(255, 210, 0, 0.5); }
+        }
+
+        /* Combat Challenge Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(3, 6, 15, 0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .combat-modal {
+            background: #0b1021;
+            border: 2px solid var(--neon-cyan);
+            border-radius: 14px;
+            max-width: 640px;
+            width: 100%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 242, 254, 0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .combat-header {
+            padding: 16px 24px;
+            background: rgba(14, 20, 42, 0.95);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .combat-movie-tag {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--neon-cyan);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .combat-body {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .combat-question {
+            font-size: 1.15rem;
+            font-weight: 600;
+            line-height: 1.5;
+            color: #fff;
+        }
+
+        .combat-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .combat-opt-btn {
+            background: #121930;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.15s ease;
+        }
+
+        .combat-opt-btn:hover:not(:disabled) {
+            background: rgba(0, 242, 254, 0.15);
+            border-color: var(--neon-cyan);
+            color: #fff;
+            transform: translateX(4px);
+        }
+
+        .combat-opt-btn .opt-prefix {
+            font-size: 0.75rem;
+            font-weight: 800;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 2px 7px;
+            border-radius: 4px;
+            color: var(--neon-cyan);
+        }
+
+        .combat-feedback {
+            display: none;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            line-height: 1.45;
+        }
+
+        .combat-feedback.correct {
+            display: block;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--neon-green);
+            color: #e2fbf0;
+        }
+
+        .combat-feedback.incorrect {
+            display: block;
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid var(--neon-red);
+            color: #ffebf0;
+        }
+
+        .combat-footer {
+            padding: 14px 24px;
+            background: rgba(14, 20, 42, 0.95);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn-continue {
+            background: var(--neon-cyan);
+            color: #030611;
+            font-weight: 700;
+            padding: 8px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            display: none;
+        }
+
+        .btn-continue:hover {
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.5);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.97); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="stars-canvas"></canvas>
+    <div class="container">
+        <header>
+            <div class="header-title">
+                <h1>🌌 Cosmic Trivia & Strategy Conquest</h1>
+                <p>Liberate the galaxy sector by sector by answering challenges from canonical Sci-Fi cinema.</p>
+            </div>
+            <button type="button" class="btn-reset" onclick="resetCampaign()">
+                <i class="fa-solid fa-rotate-left"></i> Reset Campaign
+            </button>
+        </header>
+
+        <!-- HUD Section -->
+        <div class="hud">
+            <div class="hud-card">
+                <span class="hud-label"><i class="fa-solid fa-shield-halved"></i> Shield Integrity</span>
+                <span class="hud-value" id="hud-shields">100%</span>
+                <div class="shield-bar-bg">
+                    <div class="shield-bar-fill" id="hud-shield-bar" style="width: 100%;"></div>
+                </div>
+            </div>
+            <div class="hud-card">
+                <span class="hud-label"><i class="fa-solid fa-bolt"></i> Cosmic Energy</span>
+                <span class="hud-value" id="hud-energy" style="color:var(--neon-gold);">50</span>
+            </div>
+            <div class="hud-card">
+                <span class="hud-label"><i class="fa-solid fa-flag"></i> Liberated Sectors</span>
+                <span class="hud-value" id="hud-sectors" style="color:var(--neon-cyan);">1 / 6</span>
+            </div>
+            <div class="hud-card">
+                <span class="hud-label"><i class="fa-solid fa-satellite-dish"></i> Sol Fleet Status</span>
+                <span class="hud-value" id="hud-status" style="font-size:1.1rem; padding-top:4px;">IN PROGRESS</span>
+            </div>
+        </div>
+
+        <div class="grid-header">
+            <span><strong>Star Map Sector Graph:</strong> Click an <strong>Attack Target</strong> to engage the Gatekeeper.</span>
+            <span>Rules: Adjacency Required &bull; Correct +25E/+10S &bull; Incorrect -35S</span>
+        </div>
+
+        <!-- Sector Grid -->
+        <div class="sector-grid" id="sector-grid">
+            <!-- Dynamic sector cards injected here -->
+        </div>
+    </div>
+
+    <!-- Combat Challenge Modal -->
+    <div class="modal-overlay" id="combatModal">
+        <div class="combat-modal" role="dialog" aria-modal="true">
+            <div class="combat-header">
+                <div>
+                    <span class="combat-movie-tag" id="combatMovieTitle">CINEMA ARCHIVE: ALIEN (1979)</span>
+                    <div style="font-size:0.9rem; color:#fff; font-weight:700; margin-top:2px;" id="combatSectorName">Target Sector: LV-426</div>
+                </div>
+                <button type="button" onclick="closeCombatModal()" style="background:none; border:none; color:var(--text-muted); font-size:1.2rem; cursor:pointer;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="combat-body">
+                <div class="combat-question" id="combatQuestion">Loading combat challenge...</div>
+                <div class="combat-options" id="combatOptions"></div>
+                <div class="combat-feedback" id="combatFeedback"></div>
+            </div>
+            <div class="combat-footer">
+                <button type="button" class="btn-continue" id="btnContinue" onclick="closeCombatModal()">Continue Campaign</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTargetSector = null;
+        let currentGameState = null;
+
+        const SECTOR_LABELS = {
+            'earth': 'Earth (Home Base)',
+            'lv426': 'LV-426 Outpost',
+            'tannhauser': 'Tannhauser Gate',
+            'arrakis': 'Arrakis Stronghold',
+            'solaris': 'Solaris Station',
+            'zion': 'Zion Machine Frontier'
+        };
+
+        async function fetchGameState() {
+            try {
+                const res = await fetch('/api/game/state');
+                if (!res.ok) throw new Error('Failed to retrieve game state');
+                currentGameState = await res.json();
+                renderUI(currentGameState);
+            } catch (err) {
+                console.error('State load error:', err);
+            }
+        }
+
+        function renderUI(state) {
+            // Update HUD
+            const shields = Math.max(0, state.shields || 0);
+            const energy = state.energy || 0;
+            const status = state.status || 'IN_PROGRESS';
+            const controlled = state.controlled_sectors || ['earth'];
+            const targets = state.available_targets || [];
+
+            document.getElementById('hud-shields').innerText = `${shields}%`;
+            document.getElementById('hud-energy').innerText = energy;
+            document.getElementById('hud-sectors').innerText = `${controlled.length} / 6`;
+            
+            const statusEl = document.getElementById('hud-status');
+            statusEl.innerText = status;
+            if (status === 'VICTORY') {
+                statusEl.style.color = 'var(--neon-green)';
+            } else if (status === 'DEFEAT') {
+                statusEl.style.color = 'var(--neon-red)';
+            } else {
+                statusEl.style.color = '#fff';
+            }
+
+            const shieldBar = document.getElementById('hud-shield-bar');
+            shieldBar.style.width = `${shields}%`;
+            if (shields > 50) {
+                shieldBar.style.background = 'var(--neon-green)';
+            } else if (shields > 25) {
+                shieldBar.style.background = 'var(--neon-gold)';
+            } else {
+                shieldBar.style.background = 'var(--neon-red)';
+            }
+
+            // Render Sector Cards
+            const grid = document.getElementById('sector-grid');
+            grid.innerHTML = '';
+            const allSectors = ['earth', 'lv426', 'tannhauser', 'arrakis', 'solaris', 'zion'];
+
+            allSectors.forEach(sec => {
+                const isControlled = controlled.includes(sec);
+                const isTarget = targets.includes(sec);
+                const card = document.createElement('div');
+                card.className = 'sector-card ' + (isControlled ? 'controlled' : (isTarget ? 'target' : 'locked'));
+
+                let icon = isControlled ? 'fa-circle-check' : (isTarget ? 'fa-crosshairs' : 'fa-lock');
+                let badgeText = isControlled ? 'Liberated Base' : (isTarget ? 'Attack Target' : 'Out of Reach');
+
+                card.innerHTML = `
+                    <div style="font-size:1.8rem; color:${isControlled ? 'var(--neon-cyan)' : (isTarget ? 'var(--neon-gold)' : 'var(--text-muted)')};">
+                        <i class="fa-solid ${icon}"></i>
+                    </div>
+                    <div class="sector-name">${sec.toUpperCase()}</div>
+                    <div style="font-size:0.75rem; color:var(--text-muted);">${SECTOR_LABELS[sec] || sec}</div>
+                    <div class="sector-badge"><i class="fa-solid ${icon}"></i> ${badgeText}</div>
+                `;
+
+                if (isTarget && status === 'IN_PROGRESS') {
+                    card.onclick = () => initiateAttack(sec);
+                } else if (!isControlled) {
+                    card.onclick = () => {
+                        alert(`Sector ${sec.toUpperCase()} is not adjacent to controlled territory! Under Gatekeeper rules, you must capture a connected adjacent sector first.`);
+                    };
+                }
+
+                grid.appendChild(card);
+            });
+        }
+
+        async function initiateAttack(sector) {
+            currentTargetSector = sector;
+            const modal = document.getElementById('combatModal');
+            const feedback = document.getElementById('combatFeedback');
+            const btnContinue = document.getElementById('btnContinue');
+            
+            feedback.className = 'combat-feedback';
+            feedback.style.display = 'none';
+            btnContinue.style.display = 'none';
+
+            document.getElementById('combatSectorName').innerText = `Assaulting Sector: ${sector.toUpperCase()} (${SECTOR_LABELS[sector] || sector})`;
+            document.getElementById('combatQuestion').innerText = 'Contacting AI Galaxy Gatekeeper...';
+            document.getElementById('combatOptions').innerHTML = '';
+            modal.classList.add('open');
+
+            try {
+                const res = await fetch('/api/game/attack', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_sector: sector })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert(err.detail || 'Cannot attack this sector.');
+                    closeCombatModal();
+                    return;
+                }
+
+                const trivia = await res.json();
+                if (!trivia || !Array.isArray(trivia.options)) {
+                    alert(`Combat challenge error: Received invalid trivia format (${trivia && trivia.error ? trivia.error : 'missing options array'}).`);
+                    closeCombatModal();
+                    return;
+                }
+                document.getElementById('combatMovieTitle').innerText = `CINEMA ARCHIVE: ${trivia.movie_title || 'CANONICAL SCI-FI'}`;
+                document.getElementById('combatQuestion').innerText = trivia.question;
+
+                const optContainer = document.getElementById('combatOptions');
+                optContainer.innerHTML = '';
+                const letters = ['A', 'B', 'C', 'D'];
+
+                trivia.options.forEach((optText, idx) => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'combat-opt-btn';
+                    btn.innerHTML = `<span class="opt-prefix">${letters[idx]}</span> <span>${optText}</span>`;
+                    btn.onclick = () => submitAnswer(idx, trivia);
+                    optContainer.appendChild(btn);
+                });
+            } catch (err) {
+                alert(`Combat initialisation error: ${err.message}`);
+                closeCombatModal();
+            }
+        }
+
+        async function submitAnswer(chosenIdx, trivia) {
+            // Disable option buttons during submit
+            document.querySelectorAll('.combat-opt-btn').forEach(btn => btn.disabled = true);
+
+            try {
+                const res = await fetch('/api/game/answer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target_sector: currentTargetSector, chosen_index: chosenIdx })
+                });
+
+                const data = await res.json();
+                const feedback = document.getElementById('combatFeedback');
+                const btnContinue = document.getElementById('btnContinue');
+
+                if (data.correct) {
+                    feedback.className = 'combat-feedback correct';
+                    feedback.innerHTML = `
+                        <strong><i class="fa-solid fa-circle-check"></i> CORRECT ANSWER! Sector Liberated!</strong><br>
+                        <span style="font-size:0.85rem; color:#a7f3d0;">+25 Energy gained &bull; +10 Shields recovered</span>
+                        <p style="margin-top:6px; font-size:0.85rem;">${data.explanation || ''}</p>
+                    `;
+                } else {
+                    feedback.className = 'combat-feedback incorrect';
+                    feedback.innerHTML = `
+                        <strong><i class="fa-solid fa-triangle-exclamation"></i> INCORRECT! Defense Counter-Attack!</strong><br>
+                        <span style="font-size:0.85rem; color:#fecdd3;">Shields took -35 hull damage!</span>
+                        <p style="margin-top:6px; font-size:0.85rem;">${data.explanation || ''}</p>
+                    `;
+                }
+
+                feedback.style.display = 'block';
+                btnContinue.style.display = 'inline-block';
+
+                // Refresh state in background
+                if (data.game_state) {
+                    renderUI(data.game_state);
+                } else {
+                    fetchGameState();
+                }
+            } catch (err) {
+                alert(`Error submitting answer: ${err.message}`);
+            }
+        }
+
+        function closeCombatModal() {
+            document.getElementById('combatModal').classList.remove('open');
+            fetchGameState();
+        }
+
+        async function resetCampaign() {
+            try {
+                const res = await fetch('/api/game/reset', { method: 'POST' });
+                if (res.ok) {
+                    const data = await res.json();
+                    renderUI(data.game_state);
+                } else {
+                    fetchGameState();
+                }
+            } catch (err) {
+                fetchGameState();
+            }
+        }
+
+        // Ambient Cosmic Starfield Animation
+        const canvas = document.getElementById('stars-canvas');
+        if (canvas) {
+            const cctx = canvas.getContext('2d');
+            let stars = [];
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                stars = [];
+                for (let i = 0; i < 110; i++) {
+                    stars.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        radius: Math.random() * 1.5 + 0.5,
+                        alpha: Math.random() * 0.8 + 0.2,
+                        speed: Math.random() * 0.2 + 0.05,
+                    });
+                }
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            function animateStars() {
+                cctx.clearRect(0, 0, canvas.width, canvas.height);
+                cctx.fillStyle = '#ffffff';
+                stars.forEach(s => {
+                    cctx.globalAlpha = s.alpha;
+                    cctx.beginPath();
+                    cctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+                    cctx.fill();
+                    s.y -= s.speed;
+                    if (s.y < 0) s.y = canvas.height;
+                });
+                requestAnimationFrame(animateStars);
+            }
+            animateStars();
+        }
+
+        // Initial state load
+        document.addEventListener('DOMContentLoaded', fetchGameState);
+    </script>
+</body>
+</html>

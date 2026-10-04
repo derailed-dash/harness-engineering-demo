@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harness Engineering Workbench | Google Cloud & ADK</title>
+    <link rel="stylesheet" href="/static/css/workbench.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <!-- Top Navigation & Control Group (Sticky Wrapper) -->
+    <div class="top-nav-group">
+        <!-- Top Header -->
+        <header>
+            <div class="brand">
+                <div class="brand-icon">🏎️</div>
+                <div class="brand-title">
+                    <h1>Harness Engineering Workbench</h1>
+                    <p>Vibe Coding (Single Turn) vs Harness with Loop Engineering</p>
+                </div>
+            </div>
+            <div class="controls">
+                <span style="font-size:0.8rem; color:#94a3b8; background:rgba(255,255,255,0.05); padding:6px 12px; border-radius:6px; border:1px solid #1f2b4d;">
+                    <i class="fa-solid fa-microchip"></i> Model: <strong>{{ model_name }}</strong>
+                </span>
+                <span style="font-size:0.8rem; color:var(--accent-green); background:rgba(0,255,136,0.08); padding:6px 12px; border-radius:6px; border:1px solid rgba(0,255,136,0.3);">
+                    <i class="fa-solid fa-shield-halved"></i> Auth: <strong>{{ auth_mode }}</strong>
+                </span>
+                <button class="btn-primary" onclick="startStream('/api/stream/compare')" title="Run live comparison against Gemini model">
+                    <i class="fa-solid fa-play"></i> Run Comparison
+                </button>
+                <button class="btn-secondary" onclick="startStream('/api/stream/replay')" title="Instant zero-latency presentation replay">
+                    <i class="fa-solid fa-bolt"></i> Presentation Replay
+                </button>
+                <button class="btn-secondary" onclick="resetUI()" title="Reset workspaces and UI state">
+                    <i class="fa-solid fa-rotate-left"></i> Reset
+                </button>
+
+            </div>
+        </header>
+
+        <!-- Meta Architecture Notice -->
+        <div class="meta-notice">
+            <div>
+                <strong style="color:var(--accent-cyan);"><i class="fa-solid fa-layer-group"></i> Meta Architecture:</strong>
+                You are operating <strong>Layer 1 (The Harness Workbench Test Rig)</strong>. 
+                When triggered, both agents independently build <strong>Layer 2 (The Target Application: "Cosmic Trivia & Strategy Conquest")</strong> into isolated workspaces below, which are scored against our multi-point evaluation rubric and playable live in the Arcade Preview.
+            </div>
+            <a href="https://github.com/derailed-dash/harness-engineering-demo/blob/main/ARCHITECTURE.md" target="_blank" style="color:var(--accent-cyan); text-decoration:none; margin-left:15px; white-space:nowrap; font-weight:600;">
+                <i class="fa-solid fa-book-open"></i> Read ARCHITECTURE.md
+            </a>
+        </div>
+
+        <!-- Shared Specification & Harness Inputs Banner -->
+        <div class="shared-spec-banner">
+            <div class="spec-stack-group">
+                <div class="spec-row">
+                    <div class="spec-badge">
+                        <i class="fa-solid fa-bullseye"></i> SHARED GOAL
+                    </div>
+                    <button type="button" class="spec-file-badge" onclick="openSpecModal()" title="Click to view shared goal specification">
+                        <i class="fa-regular fa-file-lines"></i>
+                        <span>specs/cosmic_conquest_spec.md</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square spec-open-icon"></i>
+                    </button>
+                </div>
+                <div class="spec-row">
+                    <span class="spec-guardrail-label">
+                        <i class="fa-solid fa-shield-halved"></i> GUARDRAILS
+                    </span>
+                    <button type="button" class="spec-file-badge harness-context-badge" onclick="openHarnessContextModal()" title="Click to view harness engineering context (GEMINI.md)">
+                        <i class="fa-solid fa-file-shield"></i>
+                        <span>specs/harness_context.md</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square spec-open-icon"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="spec-note">
+                <i class="fa-solid fa-circle-info"></i> Goal spec is <strong>shared</strong>; only the Harnessed track receives <strong>harness guardrails</strong>.
+            </div>
+        </div>
+
+        <!-- Metrics Dashboard Banner (Status Row at Top of Tracks) -->
+        <div class="metrics-banner">
+            <div class="metric-card">
+                <span class="metric-label">Pipeline Status</span>
+                <span class="metric-value" id="metric-status" style="color:var(--accent-cyan);">Ready</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Execution Duration</span>
+                <span class="metric-value" id="metric-time">0:00</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Combined Total Tokens</span>
+                <span class="metric-value" id="metric-total-tokens" style="color:var(--text-primary);">0</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Combined Total Cost</span>
+                <span class="metric-value" id="metric-total-cost" style="color:var(--accent-green);">$0.0000</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Split-Screen View -->
+    <div class="main-container">
+        <!-- Unharnessed Column -->
+        <div class="split-column">
+            <div class="column-header">
+                <div class="column-title-group">
+                    <div class="column-title">
+                        <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent-red);"></i>
+                        Unharnessed (Vibe Coding)
+                    </div>
+                    <div class="column-subtitle">
+                        <code>workspaces/unharnessed/</code>
+                    </div>
+                </div>
+                <span class="badge badge-vibe">Single Turn / No Harness</span>
+            </div>
+            <div class="skills-bar" style="opacity:0.75;">
+                <span class="skills-bar-label" style="color:var(--accent-red);"><i class="fa-solid fa-ban"></i> Active Skills:</span>
+                <span class="skill-tag skill-tag-disabled" title="No specialized skills provided to the model">None (Zero specialized skills)</span>
+            </div>
+            <div class="feed" id="unharnessed-feed">
+                <div class="feed-card">
+                    <div class="feed-time">System Ready</div>
+                    <strong>Execution Strategy:</strong>
+                    <p style="color:#94a3b8; font-size:0.8rem; margin-top:4px;">
+                        Raw model prompted directly with <code>specs/cosmic_conquest_spec.md</code> in a single turn.
+                    </p>
+                    <p style="color:#64748b; font-size:0.75rem; margin-top:6px;">
+                        <strong>Harness Status:</strong> Zero context files (no <code>GEMINI.md</code>), no test suite generation, no linter feedback, no self-healing loop. Evaluated once at the end.
+                    </p>
+                </div>
+            </div>
+            <div class="panel-metrics">
+                <div class="panel-metric">
+                    <span class="p-label"><i class="fa-solid fa-coins"></i> Tokens:</span>
+                    <span class="p-value p-value-vibe" id="unharnessed-tokens">0</span>
+                </div>
+                <div class="panel-metric">
+                    <span class="p-label"><i class="fa-solid fa-dollar-sign"></i> Est. Cost:</span>
+                    <span class="p-value" id="unharnessed-cost">$0.0000</span>
+                </div>
+                <div class="panel-metric">
+                    <span class="p-label"><i class="fa-solid fa-clock"></i> Time:</span>
+                    <span class="p-value" id="unharnessed-time" style="color:var(--text-primary);">0:00</span>
+                </div>
+                <div class="panel-metric">
+                    <span class="p-label"><i class="fa-solid fa-clipboard-check"></i> Score:</span>
+                    <span class="p-value" id="unharnessed-score" style="color:var(--accent-red);">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Harnessed Column -->
+        <div class="split-column">
+            <div class="column-header">
+                <div class="column-title-group">
+                    <div class="column-title">
+                        <i class="fa-solid fa-microchip" style="color:var(--accent-cyan);"></i>
+                        Harness Engineering with Loop
+                    </div>
+                    <div class="column-subtitle">
+                        <code>workspaces/harnessed/</code>
+                    </div>
+                </div>
+                <span class="badge badge-harness">Context / Skills / TDD / Rubric</span>
+            </div>
+            <div class="skills-bar">
+                <span class="skills-bar-label"><i class="fa-solid fa-puzzle-piece" style="color:var(--accent-cyan);"></i> Active Skills:</span>
+                <span class="skill-tag" id="skill-tag-tdd" title="Test-Driven Development: Mandatory unit tests in tests/test_game.py before implementation">
+                    <i class="fa-solid fa-flask"></i> test-driven-development
+                </span>
+                <span class="skill-tag" id="skill-tag-api" title="API & Interface Design: Strict Pydantic models & 400 error contracts">
+                    <i class="fa-solid fa-code"></i> api-and-interface-design
+                </span>
+                <span class="skill-tag" id="skill-tag-gemini" title="Gemini API Dev: google-genai SDK integration & canonical movie grounding">
+                    <i class="fa-solid fa-brain"></i> gemini-api-dev
+                </span>
+            </div>
+            <div class="feed" id="harnessed-feed">
+                <div class="feed-card">
+                    <div class="feed-time">System Ready</div>
+                    <strong>Execution Strategy:</strong>
+                    <p style="color:#94a3b8; font-size:0.8rem; margin-top:4px;">
+                        Autonomous ADK loop executing against <code>specs/cosmic_conquest_spec.md</code> with full harness engineering.
+                    </p>
+                    <p style="color:#64748b; font-size:0.75rem; margin-top:6px;">
+                        <strong>Harness Status:</strong> Context guardrails (<a href="javascript:void(0)" onclick="openHarnessContextModal()" style="color:var(--accent-green); text-decoration:underline;"><code>specs/harness_context.md</code></a>) + Specialised Skills + Turn-by-turn Evaluation Rubric Gate + Living memory feedback.
+                    </p>
+                </div>
+            </div>
+            <div class="panel-metrics">
+                <div class="panel-metric">
+                    <span class="p-label"><i class="fa-solid fa-coins"></i> Tokens:</span>
+                    <span class="p-value p-value-harness" id="harnessed-tokens">0</span>
+                </div>
+                <div class="panel-metric">
+                    <span class="p-label"><i class="fa-solid fa-dollar-sign"></i> Est. Cost:</span>
+                    <span class="p-value" id="harnessed-cost">$0.0000</span>
+                </div>
+                <div class="panel-metric">
+                    <span class="p-label"><i class="fa-solid fa-clock"></i> Time:</span>
+                    <span class="p-value" id="harnessed-time" style="color:var(--accent-green);">0:00</span>
+                </div>
+                <div class="panel-metric">
+                    <span class="p-label"><i class="fa-solid fa-clipboard-check"></i> Score:</span>
+                    <span class="p-value" id="harnessed-score" style="color:var(--accent-green);">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Interactive Preview Drawer -->
+    <div class="preview-drawer">
+        <div class="drawer-tabs">
+            <button class="tab-btn active" id="tab-btn-harnessed" onclick="switchTab('harnessed')">
+                <i class="fa-solid fa-gamepad" style="color:var(--accent-cyan);"></i>
+                <span>Layer 2 Preview: Harnessed Workspace</span>
+                <span id="harnessed-preview-ready" style="display:none; margin-left:6px; font-size:0.7rem; background:rgba(0,255,136,0.15); color:var(--accent-green); padding:2px 6px; border-radius:4px; border:1px solid rgba(0,255,136,0.3);"><i class="fa-solid fa-check"></i> Ready</span>
+            </button>
+            <button class="tab-btn" id="tab-btn-unharnessed" onclick="switchTab('unharnessed')">
+                <i class="fa-solid fa-bug" style="color:var(--accent-red);"></i>
+                <span>Layer 2 Preview: Unharnessed Workspace</span>
+                <span id="unharnessed-preview-ready" style="display:none; margin-left:6px; font-size:0.7rem; background:rgba(255,51,102,0.15); color:var(--accent-red); padding:2px 6px; border-radius:4px; border:1px solid rgba(255,51,102,0.3);"><i class="fa-solid fa-check"></i> Ready</span>
+            </button>
+            <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+                <a id="btn-open-preview-tab" href="/preview/harnessed" target="_blank" style="color:var(--accent-cyan); font-size:0.8rem; text-decoration:none;">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Game in New Tab
+                </a>
+            </div>
+        </div>
+        <iframe id="frame-harnessed" class="preview-frame" src="/preview/harnessed"></iframe>
+        <iframe id="frame-unharnessed" class="preview-frame" src="/preview/unharnessed" style="display:none;"></iframe>
+    </div>
+
+    <!-- Document Viewer Modal (Shared Spec & Harness Context) -->
+    <div id="spec-modal" class="modal-backdrop" onclick="handleModalBackdropClick(event)">
+        <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-spec-title">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <i class="fa-regular fa-file-lines modal-icon" id="modal-doc-icon"></i>
+                    <div>
+                        <div class="modal-title" id="modal-spec-title">specs/cosmic_conquest_spec.md</div>
+                        <div class="modal-subtitle" id="modal-spec-subtitle">Shared Goal Specification (Identical Baseline for Both Pipelines)</div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="modal-toggle-btn" id="spec-toggle-view-btn" onclick="toggleSpecViewMode()" title="Toggle between formatted Markdown and Raw Markdown">
+                        <i class="fa-solid fa-code"></i> <span>Raw Markdown</span>
+                    </button>
+                    <button type="button" class="modal-close-btn" onclick="closeSpecModal()" aria-label="Close dialog" title="Close (Esc)">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body" id="spec-modal-body">
+                <script type="text/plain" id="spec-content-data">{{ spec_content | safe }}</script>
+                <script type="text/plain" id="harness-context-data">{{ harness_context_content | safe }}</script>
+                <div id="spec-rendered-view" class="spec-markdown-content"></div>
+                <pre id="spec-raw-view" class="spec-raw-content" style="display:none;"><code id="spec-raw-code"></code></pre>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-footer-note" id="modal-footer-note">
+                    <i class="fa-solid fa-circle-info" style="color:var(--accent-cyan);"></i>
+                    Both the Unharnessed and Harnessed agents receive this exact same specification. The only variable is the Harness.
+                </div>
+                <button type="button" class="btn-secondary" onclick="closeSpecModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/workbench.js"></script>
+</body>
+</html>

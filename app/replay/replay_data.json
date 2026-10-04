@@ -1,0 +1,880 @@
+{
+  "events": [
+    {
+      "type": "init",
+      "message": "Starting Parallel Comparison: Vibe Coding vs Harness Engineering running concurrently...",
+      "delay_ms": 300
+    },
+    {
+      "type": "unharnessed_start",
+      "message": "Launching Unharnessed One-Shot (Vibe Coding)...",
+      "delay_ms": 364
+    },
+    {
+      "type": "unharnessed_event",
+      "data": {
+        "stage": "starting",
+        "message": "Sending raw goal prompt via ADC (dazbo-portfolio) (no context, no skills, no loop)..."
+      },
+      "metrics": {
+        "prompt_tokens": 0,
+        "candidate_tokens": 0,
+        "total_tokens": 0,
+        "estimated_cost_usd": 0.0,
+        "formatted_cost": "$0.0000",
+        "turn_count": 0
+      },
+      "delay_ms": 80
+    },
+    {
+      "type": "harnessed_start",
+      "message": "Launching Harnessed Loop Engineering (ADK + TDD + Rubric Gate)...",
+      "delay_ms": 80
+    },
+    {
+      "type": "harnessed_event",
+      "data": {
+        "stage": "starting",
+        "message": "Initialising Harness: Shared spec (specs/cosmic_conquest_spec.md) + GEMINI.md loaded..."
+      },
+      "metrics": {
+        "prompt_tokens": 0,
+        "candidate_tokens": 0,
+        "total_tokens": 0,
+        "estimated_cost_usd": 0.0,
+        "formatted_cost": "$0.0000",
+        "turn_count": 0
+      },
+      "delay_ms": 80
+    },
+    {
+      "type": "harnessed_event",
+      "data": {
+        "stage": "skill_activated",
+        "skill": "test-driven-development",
+        "name": "Test-Driven Development (TDD)",
+        "message": "Activated skill: test-driven-development. Mandates authoring unit tests in tests/test_game.py first.",
+        "rationale": "Enforces red-green-refactor loop covering star map adjacency and combat mechanics."
+      },
+      "metrics": {
+        "prompt_tokens": 0,
+        "candidate_tokens": 0,
+        "total_tokens": 0,
+        "estimated_cost_usd": 0.0,
+        "formatted_cost": "$0.0000",
+        "turn_count": 0
+      },
+      "delay_ms": 126
+    },
+    {
+      "type": "harnessed_event",
+      "data": {
+        "stage": "skill_activated",
+        "skill": "api-and-interface-design",
+        "name": "API & Interface Design",
+        "message": "Activated skill: api-and-interface-design. Enforces Pydantic models and HTTP 400 error contracts.",
+        "rationale": "Guarantees parameter validation and rejection of invalid sector attacks with actionable error details."
+      },
+      "metrics": {
+        "prompt_tokens": 0,
+        "candidate_tokens": 0,
+        "total_tokens": 0,
+        "estimated_cost_usd": 0.0,
+        "formatted_cost": "$0.0000",
+        "turn_count": 0
+      },
+      "delay_ms": 80
+    },
+    {
+      "type": "harnessed_event",
+      "data": {
+        "stage": "skill_activated",
+        "skill": "gemini-api-dev",
+        "name": "Gemini API Development",
+        "message": "Activated skill: gemini-api-dev. Integrates google-genai SDK with real Sci-Fi movie grounding.",
+        "rationale": "Restricts trivia questions strictly to real canonical films (e.g. Blade Runner, Alien, The Matrix, Dune)."
+      },
+      "metrics": {
+        "prompt_tokens": 0,
+        "candidate_tokens": 0,
+        "total_tokens": 0,
+        "estimated_cost_usd": 0.0,
+        "formatted_cost": "$0.0000",
+        "turn_count": 0
+      },
+      "delay_ms": 80
+    },
+    {
+      "type": "harnessed_event",
+      "data": {
+        "stage": "iteration_start",
+        "iteration": 1,
+        "max_iterations": 5,
+        "message": "Iteration 1: Executing TDD Red-Green-Refactor cycle. Authoring unit tests first..."
+      },
+      "metrics": {
+        "prompt_tokens": 0,
+        "candidate_tokens": 0,
+        "total_tokens": 0,
+        "estimated_cost_usd": 0.0,
+        "formatted_cost": "$0.0000",
+        "turn_count": 0
+      },
+      "delay_ms": 80
+    },
+    {
+      "type": "harnessed_event",
+      "data": {
+        "stage": "tool_exec",
+        "iteration": 1,
+        "tool": "pytest",
+        "message": "Running unit test runner: pytest tests/test_game.py",
+        "output": "tests/test_game.py ... [100%] 3 passed in 0.04s"
+      },
+      "metrics": {
+        "prompt_tokens": 2400,
+        "candidate_tokens": 3800,
+        "total_tokens": 6200,
+        "estimated_cost_usd": 0.00264,
+        "formatted_cost": "$0.0026",
+        "turn_count": 1
+      },
+      "delay_ms": 82
+    },
+    {
+      "type": "harnessed_event",
+      "data": {
+        "stage": "tool_exec",
+        "iteration": 1,
+        "tool": "ruff",
+        "message": "Running static analysis: ruff check .",
+        "output": "All checks passed cleanly."
+      },
+      "metrics": {
+        "prompt_tokens": 2400,
+        "candidate_tokens": 3800,
+        "total_tokens": 6200,
+        "estimated_cost_usd": 0.00264,
+        "formatted_cost": "$0.0026",
+        "turn_count": 1
+      },
+      "delay_ms": 80
+    },
+    {
+      "type": "harnessed_event",
+      "data": {
+        "stage": "evaluating",
+        "iteration": 1,
+        "message": "Running evaluation gate on Iteration 1 candidate..."
+      },
+      "metrics": {
+        "prompt_tokens": 2400,
+        "candidate_tokens": 3800,
+        "total_tokens": 6200,
+        "estimated_cost_usd": 0.00264,
+        "formatted_cost": "$0.0026",
+        "turn_count": 1
+      },
+      "delay_ms": 80
+    },
+    {
+      "type": "harnessed_event",
+      "data": {
+        "stage": "rubric_update",
+        "iteration": 1,
+        "scorecard": {
+          "score": 11.0,
+          "max_score": 14.0,
+          "is_passing": false,
+          "tier_1_mechanical": [
+            {
+              "id": "1.1",
+              "name": "Unit Tests Passage",
+              "passed": true,
+              "score": 1.0,
+              "details": "All unit tests passed cleanly."
+            },
+            {
+              "id": "1.2",
+              "name": "Static Analysis (Ruff)",
+              "passed": false,
+              "score": 0.0,
+              "details": "I001 [*] Import block is un-sorted or un-formatted\n  --> main.py:8:1\n   |\n 6 |   \"\"\"\n 7 |\n 8 | / from fastapi import FastAPI, HTTPException\n 9 | | from fastapi.staticfiles import StaticFiles\n10 | | from fastapi.responses import HTMLResponse\n11 | | from pydantic import BaseModel, Field\n12 | | from pathlib import Path\n13 | |\n14 | | import game_engine\n15 | | import trivia_service\n   | |______________"
+            },
+            {
+              "id": "1.3",
+              "name": "PEP 585 Type Hints",
+              "passed": true,
+              "score": 1.0,
+              "details": "Modern standard generic types used throughout."
+            },
+            {
+              "id": "1.4",
+              "name": "Parameterised Input Safety",
+              "passed": true,
+              "score": 1.0,
+              "details": "Safe parameterised input boundaries preserved."
+            },
+            {
+              "id": "1.5",
+              "name": "Deterministic Tool Trajectory",
+              "passed": true,
+              "score": 1.0,
+              "details": "Clean tool trajectory with zero unhandled exceptions."
+            },
+            {
+              "id": "1.6",
+              "name": "Frontend UI Structure & HUD",
+              "passed": true,
+              "score": 1.0,
+              "details": "Valid static/index.html structure with HUD metrics, sector grid, and combat modal."
+            },
+            {
+              "id": "1.7",
+              "name": "Frontend Interactive API Wiring",
+              "passed": false,
+              "score": 0.0,
+              "details": "Non-interactive UI: missing API endpoints in client script: /api/game/attack (sector attack trigger), /api/game/answer (combat answer submission)."
+            },
+            {
+              "id": "1.8",
+              "name": "Dynamic API Contract & Progression Topology",
+              "passed": true,
+              "score": 1.0,
+              "details": "FastAPI app booted cleanly; /api/game/state verified with controlled territory (['earth']) and active targets (['lv426', 'zion'])."
+            }
+          ],
+          "tier_2_semantic": [
+            {
+              "id": "2.1",
+              "name": "Target State Completion (Goal Fidelity)",
+              "score": 1.0,
+              "passed": true,
+              "details": "The star map adjacency graph, combat resolution turn mechanics, victory/defeat state conditions, and canonical movie trivia (Alien, Blade Runner, Dune, Solaris, The Matrix) are all implemented accurately."
+            },
+            {
+              "id": "2.2",
+              "name": "Scope Discipline (Anti-Hallucination)",
+              "score": 1.0,
+              "passed": true,
+              "details": "The implementation is concise and disciplined, using standard dependencies without unnecessary speculative helper files or bloat."
+            },
+            {
+              "id": "2.3",
+              "name": "Architectural Integrity",
+              "score": 1.0,
+              "passed": true,
+              "details": "Clear architectural separation is maintained between pure domain logic (game_engine.py), API presentation and routing (main.py), external content (trivia_service.py), and UI assets."
+            },
+            {
+              "id": "2.4",
+              "name": "Error & Remediation Clarity",
+              "score": 1.0,
+              "passed": true,
+              "details": "Invalid moves raise an HTTP 400 HTTPException with an actionable error message detailing the valid adjacent targets without leaking stack traces."
+            },
+            {
+              "id": "2.5",
+              "name": "Design Rationale & Intent",
+              "score": 1.0,
+              "passed": true,
+              "details": "Module docstrings explicitly document architectural intent and rationale explaining design choices rather than simply paraphrasing function signatures."
+            },
+            {
+              "id": "2.6",
+              "name": "Progression Ergonomics & Interactivity",
+              "score": 0.0,
+              "passed": false,
+              "details": "The frontend static HTML contains placeholder text cards with zero JavaScript, missing interactive click handlers, buttons, or progression affordances to trigger attacks and answer trivia."
+            }
+          ],
+          "failed_checks": [
+            {
+              "id": "1.2",
+              "name": "Static Analysis (Ruff)",
+              "passed": false,
+              "score": 0.0,
+              "details": "I001 [*] Import block is un-sorted or un-formatted\n  --> main.py:8:1\n   |\n 6 |   \"\"\"\n 7 |\n 8 | / from fastapi import FastAPI, HTTPException\n 9 | | from fastapi.staticfiles import StaticFiles\n10 | | from fastapi.responses import HTMLResponse\n11 | | from pydantic import BaseModel, Field\n12 | | from pathlib import Path\n13 | |\n14 | | import game_engine\n15 | | import trivia_service\n   | |______________"
+            },
+            {
+              "id": "1.7",
+              "name": "Frontend Interactive API Wiring",
+              "passed": false,
+              "score": 0.0,
+              "details": "Non-interactive UI: missing API endpoints in client script: /api/game/attack (sector attack trigger), /api/game/answer (combat answer submission)."
+            },
+            {
+              "id": "2.6",
+              "name": "Progression Ergonomics & Interactivity",
+              "score": 0.0,
+              "passed": false,
+              "details": "The frontend static HTML contains placeholder text cards with zero JavaScript, missing interactive click handlers, buttons, or progression affordances to trigger attacks and answer trivia."
+            }
+          ],
+          "diagnostics": "- Check 1.2 (Static Analysis (Ruff)) FAILED: I001 [*] Import block is un-sorted or un-formatted\n  --> main.py:8:1\n   |\n 6 |   \"\"\"\n 7 |\n 8 | / from fastapi import FastAPI, HTTPException\n 9 | | from fastapi.staticfiles import StaticFiles\n10 | | from fastapi.responses import HTMLResponse\n11 | | from pydantic import BaseModel, Field\n12 | | from pathlib import Path\n13 | |\n14 | | import game_engine\n15 | | import trivia_service\n   | |______________\n- Check 1.7 (Frontend Interactive API Wiring) FAILED: Non-interactive UI: missing API endpoints in client script: /api/game/attack (sector attack trigger), /api/game/answer (combat answer submission).\n- Check 2.6 (Progression Ergonomics & Interactivity) FAILED: The frontend static HTML contains placeholder text cards with zero JavaScript, missing interactive click handlers, buttons, or progression affordances to trigger attacks and answer trivia."
+        },
+        "message": "Iteration 1 Score: 11.0/14.0. Living memory recording feedback."
+      },
+      "metrics": {
+        "prompt_tokens": 5987,
+        "candidate_tokens": 4280,
+        "total_tokens": 10267,
+        "estimated_cost_usd": 0.003466,
+        "formatted_cost": "$0.0035",
+        "turn_count": 2
+      },
+      "delay_ms": 1200
+    },
+    {
+      "type": "harnessed_event",
+      "data": {
+        "stage": "living_memory",
+        "iteration": 1,
+        "message": "Living Memory Diagnostics: Reinjecting failure points to guide autonomous remediation in Iteration 2.",
+        "diagnostics": "- Check 1.2 (Static Analysis (Ruff)) FAILED: I001 [*] Import block is un-sorted or un-formatted\n  --> main.py:8:1\n   |\n 6 |   \"\"\"\n 7 |\n 8 | / from fastapi import FastAPI, HTTPException\n 9 | | from fastapi.staticfiles import StaticFiles\n10 | | from fastapi.responses import HTMLResponse\n11 | | from pydantic import BaseModel, Field\n12 | | from pathlib import Path\n13 | |\n14 | | import game_engine\n15 | | import trivia_service\n   | |______________\n- Check 1.7 (Frontend Interactive API Wiring) FAILED: Non-interactive UI: missing API endpoints in client script: /api/game/attack (sector attack trigger), /api/game/answer (combat answer submission).\n- Check 2.6 (Progression Ergonomics & Interactivity) FAILED: The frontend static HTML contains placeholder text cards with zero JavaScript, missing interactive click handlers, buttons, or progression affordances to trigger attacks and answer trivia."
+      },
+      "metrics": {
+        "prompt_tokens": 5987,
+        "candidate_tokens": 4280,
+        "total_tokens": 10267,
+        "estimated_cost_usd": 0.003466,
+        "formatted_cost": "$0.0035",
+        "turn_count": 2
+      },
+      "delay_ms": 80
+    },
+    {
+      "type": "harnessed_event",
+      "data": {
+        "stage": "iteration_start",
+        "iteration": 2,
+        "max_iterations": 5,
+        "message": "Iteration 2: Applying targeted self-healing (UI enhancement & final polish)..."
+      },
+      "metrics": {
+        "prompt_tokens": 5987,
+        "candidate_tokens": 4280,
+        "total_tokens": 10267,
+        "estimated_cost_usd": 0.003466,
+        "formatted_cost": "$0.0035",
+        "turn_count": 2
+      },
+      "delay_ms": 81
+    },
+    {
+      "type": "harnessed_event",
+      "data": {
+        "stage": "evaluating",
+        "iteration": 2,
+        "message": "Re-evaluating Iteration 2 candidate against 14-point Rubric..."
+      },
+      "metrics": {
+        "prompt_tokens": 7187,
+        "candidate_tokens": 6180,
+        "total_tokens": 13367,
+        "estimated_cost_usd": 0.004786,
+        "formatted_cost": "$0.0048",
+        "turn_count": 3
+      },
+      "delay_ms": 184
+    },
+    {
+      "type": "harnessed_event",
+      "data": {
+        "stage": "rubric_update",
+        "iteration": 2,
+        "scorecard": {
+          "score": 14.0,
+          "max_score": 14.0,
+          "is_passing": true,
+          "tier_1_mechanical": [
+            {
+              "id": "1.1",
+              "name": "Unit Tests Passage",
+              "passed": true,
+              "score": 1.0,
+              "details": "All unit tests passed cleanly."
+            },
+            {
+              "id": "1.2",
+              "name": "Static Analysis (Ruff)",
+              "passed": true,
+              "score": 1.0,
+              "details": "Ruff reported zero warnings or errors."
+            },
+            {
+              "id": "1.3",
+              "name": "PEP 585 Type Hints",
+              "passed": true,
+              "score": 1.0,
+              "details": "Modern standard generic types used throughout."
+            },
+            {
+              "id": "1.4",
+              "name": "Parameterised Input Safety",
+              "passed": true,
+              "score": 1.0,
+              "details": "Safe parameterised input boundaries preserved."
+            },
+            {
+              "id": "1.5",
+              "name": "Deterministic Tool Trajectory",
+              "passed": true,
+              "score": 1.0,
+              "details": "Clean tool trajectory with zero unhandled exceptions."
+            },
+            {
+              "id": "1.6",
+              "name": "Frontend UI Structure & HUD",
+              "passed": true,
+              "score": 1.0,
+              "details": "Valid static/index.html structure with HUD metrics, sector grid, and combat modal."
+            },
+            {
+              "id": "1.7",
+              "name": "Frontend Interactive API Wiring",
+              "passed": true,
+              "score": 1.0,
+              "details": "Interactive client-side JavaScript wiring verified with active endpoints."
+            },
+            {
+              "id": "1.8",
+              "name": "Dynamic API Contract & Progression Topology",
+              "passed": true,
+              "score": 1.0,
+              "details": "FastAPI app booted cleanly; /api/game/state verified with controlled territory (['earth']) and active targets (['lv426', 'zion'])."
+            }
+          ],
+          "tier_2_semantic": [
+            {
+              "id": "2.1",
+              "name": "Target State Completion (Goal Fidelity)",
+              "score": 1.0,
+              "passed": true,
+              "details": "The implementation includes a full star map graph topology, turn and combat resolution, distinct victory/defeat state triggers, and canonical sci-fi movie questions (Alien, Blade Runner, Dune, Solaris, The Matrix, 2001: A Space Odyssey)."
+            },
+            {
+              "id": "2.2",
+              "name": "Scope Discipline (Anti-Hallucination)",
+              "score": 1.0,
+              "passed": true,
+              "details": "The codebase is concise and focused, relying only on standard libraries, FastAPI, and Pydantic without unrequested speculative abstractions, extra helper bloat, or phantom dependencies."
+            },
+            {
+              "id": "2.3",
+              "name": "Architectural Integrity",
+              "score": 1.0,
+              "passed": true,
+              "details": "Strict separation of concerns is maintained across modules: game_engine houses domain rules and state progression, trivia_service isolates question data, main manages HTTP routing and validation, and index.html handles presentation."
+            },
+            {
+              "id": "2.4",
+              "name": "Error & Remediation Clarity",
+              "score": 1.0,
+              "passed": true,
+              "details": "The API returns an explicit HTTP 400 HTTPException when attempting non-adjacent attacks, providing an actionable remediation message listing valid target sectors without leaking stack traces."
+            },
+            {
+              "id": "2.5",
+              "name": "Design Rationale & Intent",
+              "score": 1.0,
+              "passed": true,
+              "details": "The module docstrings articulate the architectural 'why' (e.g., pure domain logic independent of HTTP transports, strict schema enforcement, and content derivation guarantees) rather than just functional summaries."
+            },
+            {
+              "id": "2.6",
+              "name": "Progression Ergonomics & Interactivity",
+              "score": 1.0,
+              "passed": true,
+              "details": "The UI displays dedicated grid sector cards where available target sectors are visually highlighted and directly clickable in a single action to initiate combat challenges."
+            }
+          ],
+          "failed_checks": [],
+          "diagnostics": "All 14 rubric checks satisfied 100%."
+        },
+        "message": "Iteration 2 Score: 14.0/14.0 (100% Pass Rate)."
+      },
+      "metrics": {
+        "prompt_tokens": 17575,
+        "candidate_tokens": 6712,
+        "total_tokens": 24287,
+        "estimated_cost_usd": 0.006663,
+        "formatted_cost": "$0.0067",
+        "turn_count": 4
+      },
+      "delay_ms": 1200
+    },
+    {
+      "type": "harnessed_event",
+      "data": {
+        "stage": "completed",
+        "iteration": 2,
+        "message": "Harness Gate Passed: 14/14 criteria satisfied. Autonomous loop stopping cleanly.",
+        "scorecard": {
+          "score": 14.0,
+          "max_score": 14.0,
+          "is_passing": true,
+          "tier_1_mechanical": [
+            {
+              "id": "1.1",
+              "name": "Unit Tests Passage",
+              "passed": true,
+              "score": 1.0,
+              "details": "All unit tests passed cleanly."
+            },
+            {
+              "id": "1.2",
+              "name": "Static Analysis (Ruff)",
+              "passed": true,
+              "score": 1.0,
+              "details": "Ruff reported zero warnings or errors."
+            },
+            {
+              "id": "1.3",
+              "name": "PEP 585 Type Hints",
+              "passed": true,
+              "score": 1.0,
+              "details": "Modern standard generic types used throughout."
+            },
+            {
+              "id": "1.4",
+              "name": "Parameterised Input Safety",
+              "passed": true,
+              "score": 1.0,
+              "details": "Safe parameterised input boundaries preserved."
+            },
+            {
+              "id": "1.5",
+              "name": "Deterministic Tool Trajectory",
+              "passed": true,
+              "score": 1.0,
+              "details": "Clean tool trajectory with zero unhandled exceptions."
+            },
+            {
+              "id": "1.6",
+              "name": "Frontend UI Structure & HUD",
+              "passed": true,
+              "score": 1.0,
+              "details": "Valid static/index.html structure with HUD metrics, sector grid, and combat modal."
+            },
+            {
+              "id": "1.7",
+              "name": "Frontend Interactive API Wiring",
+              "passed": true,
+              "score": 1.0,
+              "details": "Interactive client-side JavaScript wiring verified with active endpoints."
+            },
+            {
+              "id": "1.8",
+              "name": "Dynamic API Contract & Progression Topology",
+              "passed": true,
+              "score": 1.0,
+              "details": "FastAPI app booted cleanly; /api/game/state verified with controlled territory (['earth']) and active targets (['lv426', 'zion'])."
+            }
+          ],
+          "tier_2_semantic": [
+            {
+              "id": "2.1",
+              "name": "Target State Completion (Goal Fidelity)",
+              "score": 1.0,
+              "passed": true,
+              "details": "The implementation includes a full star map graph topology, turn and combat resolution, distinct victory/defeat state triggers, and canonical sci-fi movie questions (Alien, Blade Runner, Dune, Solaris, The Matrix, 2001: A Space Odyssey)."
+            },
+            {
+              "id": "2.2",
+              "name": "Scope Discipline (Anti-Hallucination)",
+              "score": 1.0,
+              "passed": true,
+              "details": "The codebase is concise and focused, relying only on standard libraries, FastAPI, and Pydantic without unrequested speculative abstractions, extra helper bloat, or phantom dependencies."
+            },
+            {
+              "id": "2.3",
+              "name": "Architectural Integrity",
+              "score": 1.0,
+              "passed": true,
+              "details": "Strict separation of concerns is maintained across modules: game_engine houses domain rules and state progression, trivia_service isolates question data, main manages HTTP routing and validation, and index.html handles presentation."
+            },
+            {
+              "id": "2.4",
+              "name": "Error & Remediation Clarity",
+              "score": 1.0,
+              "passed": true,
+              "details": "The API returns an explicit HTTP 400 HTTPException when attempting non-adjacent attacks, providing an actionable remediation message listing valid target sectors without leaking stack traces."
+            },
+            {
+              "id": "2.5",
+              "name": "Design Rationale & Intent",
+              "score": 1.0,
+              "passed": true,
+              "details": "The module docstrings articulate the architectural 'why' (e.g., pure domain logic independent of HTTP transports, strict schema enforcement, and content derivation guarantees) rather than just functional summaries."
+            },
+            {
+              "id": "2.6",
+              "name": "Progression Ergonomics & Interactivity",
+              "score": 1.0,
+              "passed": true,
+              "details": "The UI displays dedicated grid sector cards where available target sectors are visually highlighted and directly clickable in a single action to initiate combat challenges."
+            }
+          ],
+          "failed_checks": [],
+          "diagnostics": "All 14 rubric checks satisfied 100%."
+        },
+        "token_metrics": {
+          "prompt_tokens": 17575,
+          "candidate_tokens": 6712,
+          "total_tokens": 24287,
+          "estimated_cost_usd": 0.006663,
+          "formatted_cost": "$0.0067",
+          "turn_count": 4
+        },
+        "duration_seconds": 32.5,
+        "formatted_duration": "0:32"
+      },
+      "metrics": {
+        "prompt_tokens": 17575,
+        "candidate_tokens": 6712,
+        "total_tokens": 24287,
+        "estimated_cost_usd": 0.006663,
+        "formatted_cost": "$0.0067",
+        "turn_count": 4
+      },
+      "delay_ms": 81
+    },
+    {
+      "type": "unharnessed_event",
+      "data": {
+        "stage": "generated",
+        "message": "Generated 4 files in single shot.",
+        "files": [
+          "game_engine.py",
+          "trivia_service.py",
+          "main.py",
+          "static/index.html"
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 1096,
+        "candidate_tokens": 21705,
+        "total_tokens": 22801,
+        "estimated_cost_usd": 0.013187,
+        "formatted_cost": "$0.0132",
+        "turn_count": 1
+      },
+      "delay_ms": 1200
+    },
+    {
+      "type": "unharnessed_event",
+      "data": {
+        "stage": "evaluating",
+        "message": "Evaluating unharnessed solution with the Rubric..."
+      },
+      "metrics": {
+        "prompt_tokens": 1096,
+        "candidate_tokens": 21705,
+        "total_tokens": 22801,
+        "estimated_cost_usd": 0.013187,
+        "formatted_cost": "$0.0132",
+        "turn_count": 1
+      },
+      "delay_ms": 80
+    },
+    {
+      "type": "unharnessed_event",
+      "data": {
+        "stage": "completed",
+        "message": "Evaluation complete. Final Score: 9.0/14.0",
+        "scorecard": {
+          "score": 9.0,
+          "max_score": 14.0,
+          "is_passing": false,
+          "tier_1_mechanical": [
+            {
+              "id": "1.1",
+              "name": "Unit Tests Passage",
+              "passed": false,
+              "score": 0.0,
+              "details": "No unit tests found in workspace (TDD requirement omitted)."
+            },
+            {
+              "id": "1.2",
+              "name": "Static Analysis (Ruff)",
+              "passed": false,
+              "score": 0.0,
+              "details": "I001 [*] Import block is un-sorted or un-formatted\n --> game_engine.py:6:1\n  |\n4 |   \"\"\"\n5 |\n6 | / from typing import Dict, List, Set, Optional, Any\n7 | | from pydantic import BaseModel, Field\n  | |_____________________________________^\nhelp: Organize imports\n  |\n5 |\n  - from typing import Dict, List, Set, Optional, Any\n6 + from typing import Any, Dict, List, Optional, Set\n7 +\n8 | from pydantic im"
+            },
+            {
+              "id": "1.3",
+              "name": "PEP 585 Type Hints",
+              "passed": false,
+              "score": 0.0,
+              "details": "Deprecated types detected: game_engine.py: from typing import Dict, game_engine.py: from typing import List, game_engine.py: from typing import Set"
+            },
+            {
+              "id": "1.4",
+              "name": "Parameterised Input Safety",
+              "passed": true,
+              "score": 1.0,
+              "details": "Safe parameterised input boundaries preserved."
+            },
+            {
+              "id": "1.5",
+              "name": "Deterministic Tool Trajectory",
+              "passed": true,
+              "score": 1.0,
+              "details": "Clean tool trajectory with zero unhandled exceptions."
+            },
+            {
+              "id": "1.6",
+              "name": "Frontend UI Structure & HUD",
+              "passed": true,
+              "score": 1.0,
+              "details": "Valid static/index.html structure with HUD metrics, sector grid, and combat modal."
+            },
+            {
+              "id": "1.7",
+              "name": "Frontend Interactive API Wiring",
+              "passed": true,
+              "score": 1.0,
+              "details": "Interactive client-side JavaScript wiring verified with active endpoints."
+            },
+            {
+              "id": "1.8",
+              "name": "Dynamic API Contract & Progression Topology",
+              "passed": true,
+              "score": 1.0,
+              "details": "FastAPI app booted cleanly; /api/game/state verified with controlled territory (['earth']) and active targets (['lv426', 'zion'])."
+            }
+          ],
+          "tier_2_semantic": [
+            {
+              "id": "2.1",
+              "name": "Target State Completion (Goal Fidelity)",
+              "score": 1.0,
+              "passed": true,
+              "details": "The star map adjacency graph, turn progression, victory/defeat conditions, and trivia challenges strictly rooted in canon Sci-Fi films (Alien, Blade Runner, Dune, The Matrix, Solaris, 2001) are fully implemented."
+            },
+            {
+              "id": "2.2",
+              "name": "Scope Discipline (Anti-Hallucination)",
+              "score": 1.0,
+              "passed": true,
+              "details": "The solution implements the required functionality cleanly without extraneous helper files, hallucinated third-party libraries, or unnecessary bloat."
+            },
+            {
+              "id": "2.3",
+              "name": "Architectural Integrity",
+              "score": 1.0,
+              "passed": true,
+              "details": "The codebase cleanly isolates game state and graph logic (game_engine.py), external trivia integration (trivia_service.py), HTTP endpoints (main.py), and client rendering (static/index.html)."
+            },
+            {
+              "id": "2.4",
+              "name": "Error & Remediation Clarity",
+              "score": 1.0,
+              "passed": true,
+              "details": "Endpoints validate user moves (such as targeting non-adjacent or already conquered sectors) and return descriptive HTTP 400 responses without exposing raw exception stack traces."
+            },
+            {
+              "id": "2.5",
+              "name": "Design Rationale & Intent",
+              "score": 0.0,
+              "passed": false,
+              "details": "Module docstrings are brief, descriptive summaries of responsibilities (stating what each module does or exposes) rather than documenting architectural intent, trade-offs, or design rationale ('why')."
+            },
+            {
+              "id": "2.6",
+              "name": "Progression Ergonomics & Interactivity",
+              "score": 0.0,
+              "passed": false,
+              "details": "The UI lacks directly actionable sector cards or single-action attack affordances; it enforces an indirect multi-step process where the user must click an SVG node to populate a tactical sidebar and subsequently click an initially-disabled attack button."
+            }
+          ],
+          "failed_checks": [
+            {
+              "id": "1.1",
+              "name": "Unit Tests Passage",
+              "passed": false,
+              "score": 0.0,
+              "details": "No unit tests found in workspace (TDD requirement omitted)."
+            },
+            {
+              "id": "1.2",
+              "name": "Static Analysis (Ruff)",
+              "passed": false,
+              "score": 0.0,
+              "details": "I001 [*] Import block is un-sorted or un-formatted\n --> game_engine.py:6:1\n  |\n4 |   \"\"\"\n5 |\n6 | / from typing import Dict, List, Set, Optional, Any\n7 | | from pydantic import BaseModel, Field\n  | |_____________________________________^\nhelp: Organize imports\n  |\n5 |\n  - from typing import Dict, List, Set, Optional, Any\n6 + from typing import Any, Dict, List, Optional, Set\n7 +\n8 | from pydantic im"
+            },
+            {
+              "id": "1.3",
+              "name": "PEP 585 Type Hints",
+              "passed": false,
+              "score": 0.0,
+              "details": "Deprecated types detected: game_engine.py: from typing import Dict, game_engine.py: from typing import List, game_engine.py: from typing import Set"
+            },
+            {
+              "id": "2.5",
+              "name": "Design Rationale & Intent",
+              "score": 0.0,
+              "passed": false,
+              "details": "Module docstrings are brief, descriptive summaries of responsibilities (stating what each module does or exposes) rather than documenting architectural intent, trade-offs, or design rationale ('why')."
+            },
+            {
+              "id": "2.6",
+              "name": "Progression Ergonomics & Interactivity",
+              "score": 0.0,
+              "passed": false,
+              "details": "The UI lacks directly actionable sector cards or single-action attack affordances; it enforces an indirect multi-step process where the user must click an SVG node to populate a tactical sidebar and subsequently click an initially-disabled attack button."
+            }
+          ],
+          "diagnostics": "- Check 1.1 (Unit Tests Passage) FAILED: No unit tests found in workspace (TDD requirement omitted).\n- Check 1.2 (Static Analysis (Ruff)) FAILED: I001 [*] Import block is un-sorted or un-formatted\n --> game_engine.py:6:1\n  |\n4 |   \"\"\"\n5 |\n6 | / from typing import Dict, List, Set, Optional, Any\n7 | | from pydantic import BaseModel, Field\n  | |_____________________________________^\nhelp: Organize imports\n  |\n5 |\n  - from typing import Dict, List, Set, Optional, Any\n6 + from typing import Any, Dict, List, Optional, Set\n7 +\n8 | from pydantic im\n- Check 1.3 (PEP 585 Type Hints) FAILED: Deprecated types detected: game_engine.py: from typing import Dict, game_engine.py: from typing import List, game_engine.py: from typing import Set\n- Check 2.5 (Design Rationale & Intent) FAILED: Module docstrings are brief, descriptive summaries of responsibilities (stating what each module does or exposes) rather than documenting architectural intent, trade-offs, or design rationale ('why').\n- Check 2.6 (Progression Ergonomics & Interactivity) FAILED: The UI lacks directly actionable sector cards or single-action attack affordances; it enforces an indirect multi-step process where the user must click an SVG node to populate a tactical sidebar and subsequently click an initially-disabled attack button."
+        },
+        "token_metrics": {
+          "prompt_tokens": 23408,
+          "candidate_tokens": 22163,
+          "total_tokens": 45571,
+          "estimated_cost_usd": 0.016809,
+          "formatted_cost": "$0.0168",
+          "turn_count": 2
+        },
+        "duration_seconds": 136.0,
+        "formatted_duration": "2:16"
+      },
+      "metrics": {
+        "prompt_tokens": 23408,
+        "candidate_tokens": 22163,
+        "total_tokens": 45571,
+        "estimated_cost_usd": 0.016809,
+        "formatted_cost": "$0.0168",
+        "turn_count": 2
+      },
+      "delay_ms": 1200
+    },
+    {
+      "type": "comparison_summary",
+      "unharnessed": {
+        "tokens": {
+          "prompt_tokens": 23408,
+          "candidate_tokens": 22163,
+          "total_tokens": 45571,
+          "estimated_cost_usd": 0.016809,
+          "formatted_cost": "$0.0168",
+          "turn_count": 2
+        }
+      },
+      "harnessed": {
+        "tokens": {
+          "prompt_tokens": 17575,
+          "candidate_tokens": 6712,
+          "total_tokens": 24287,
+          "estimated_cost_usd": 0.006663,
+          "formatted_cost": "$0.0067",
+          "turn_count": 4
+        }
+      },
+      "total_duration_seconds": 136.1,
+      "total_formatted_duration": "2:16",
+      "message": "Parallel comparison complete. Vibe coding finished with flaws; Harness self-healed to verified quality (100% Pass Rate).",
+      "delay_ms": 500
+    }
+  ]
+}

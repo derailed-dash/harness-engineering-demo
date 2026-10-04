@@ -1,0 +1,10 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+# Generated on-demand workspaces (ignore code, preserve folder structure & READMEs)
+workspaces/*/*
+!workspaces/*/README.md
+!workspaces/README.md
