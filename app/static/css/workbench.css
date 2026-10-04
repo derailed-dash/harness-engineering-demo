@@ -277,7 +277,7 @@ button {
   border-right: 1px solid var(--border-color);
   background: var(--bg-primary);
   overflow-y: auto;
-  scroll-padding-bottom: 50px;
+  scroll-padding-bottom: 110px;
 }
 
 .split-column:last-child {
@@ -331,6 +331,29 @@ button {
 }
 .badge-vibe { background: rgba(255, 51, 102, 0.15); color: var(--accent-red); border: 1px solid var(--accent-red); }
 .badge-harness { background: rgba(0, 242, 254, 0.15); color: var(--accent-cyan); border: 1px solid var(--accent-cyan); }
+
+/* Docked Column Footer Group (Repeated Track Header + Metrics Bar above Previews) */
+.column-footer-group {
+  margin-top: auto;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.column-footer-group .column-header-bottom {
+  padding: 10px 20px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  position: static;
+}
+
+.column-footer-group .panel-metrics {
+  border-top: none;
+  position: static;
+  margin-top: 0;
+}
 
 /* Panel Dedicated Metrics Bar (Docked at Bottom of Track) */
 .panel-metrics {
@@ -491,6 +514,58 @@ button {
 
 .score-pass { color: var(--accent-green); font-weight: bold; }
 .score-fail { color: var(--accent-red); font-weight: bold; }
+
+/* Full-Width Cross-Track Comparison Summary Banner */
+.comparison-summary-banner {
+  background: linear-gradient(90deg, rgba(255, 51, 102, 0.12) 0%, rgba(13, 18, 36, 0.98) 25%, rgba(13, 18, 36, 0.98) 75%, rgba(0, 242, 254, 0.12) 100%);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: 12px 28px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+  animation: slideInBanner 0.3s ease-out;
+  flex-shrink: 0;
+  z-index: 15;
+}
+
+@keyframes slideInBanner {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.summary-badge {
+  background: linear-gradient(135deg, rgba(0, 242, 254, 0.2) 0%, rgba(79, 172, 254, 0.2) 100%);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(0, 242, 254, 0.4);
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.summary-text {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  flex: 1;
+}
+
+.summary-timestamp {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-family: monospace;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 
 /* Interactive Preview Drawer */
 .preview-drawer {

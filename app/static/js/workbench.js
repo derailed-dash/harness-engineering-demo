@@ -126,6 +126,13 @@ function clearFeeds() {
     const uBadge = document.getElementById('unharnessed-preview-ready');
     if (uBadge) uBadge.style.display = 'none';
 
+    const summaryBanner = document.getElementById('comparison-summary-banner');
+    if (summaryBanner) {
+        summaryBanner.style.display = 'none';
+        const summaryText = document.getElementById('comparison-summary-text');
+        if (summaryText) summaryText.innerText = '';
+    }
+
     updateCombinedMetrics();
     document.querySelectorAll('.skill-tag').forEach(tag => tag.classList.remove('active'));
 }
@@ -164,7 +171,7 @@ async function resetUI() {
                 Autonomous ADK loop executing against <code>specs/cosmic_conquest_spec.md</code> with full harness engineering.
             </p>
             <p style="color:#64748b; font-size:0.75rem; margin-top:6px;">
-                <strong>Harness Status:</strong> <code>GEMINI.md</code> rules (Python 3.13, PEP 585 typing, mandatory TDD) + Specialised Skills + Turn-by-turn 10-Point Rubric Gate + Living memory feedback.
+                <strong>Harness Status:</strong> <code>GEMINI.md</code> rules (Python 3.13, PEP 585 typing, mandatory TDD) + Specialised Skills + Turn-by-turn 14-Point Rubric Gate + Living memory feedback.
             </p>
         </div>
     `;
@@ -432,7 +439,19 @@ function handleStreamEvent(evt) {
             const hTimeEl = document.getElementById('harnessed-time');
             if (hTimeEl) hTimeEl.innerText = evt.harnessed_formatted_duration;
         }
-        appendFeedCard('harnessed-feed', 'Summary', evt.message, null, true);
+
+        // Display unified comparison summary in full-width banner across both tracks
+        const banner = document.getElementById('comparison-summary-banner');
+        const summaryText = document.getElementById('comparison-summary-text');
+        const summaryTime = document.getElementById('comparison-summary-time');
+        if (banner && summaryText) {
+            summaryText.innerText = evt.message;
+            if (summaryTime) {
+                summaryTime.innerText = new Date().toLocaleTimeString();
+            }
+            banner.style.display = 'flex';
+            banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
     }
 }
 

@@ -134,22 +134,36 @@
                     </p>
                 </div>
             </div>
-            <div class="panel-metrics">
-                <div class="panel-metric">
-                    <span class="p-label"><i class="fa-solid fa-coins"></i> Tokens:</span>
-                    <span class="p-value p-value-vibe" id="unharnessed-tokens">0</span>
+            <div class="column-footer-group">
+                <div class="column-header column-header-bottom">
+                    <div class="column-title-group">
+                        <div class="column-title">
+                            <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent-red);"></i>
+                            Unharnessed (Vibe Coding)
+                        </div>
+                        <div class="column-subtitle">
+                            <code>workspaces/unharnessed/</code>
+                        </div>
+                    </div>
+                    <span class="badge badge-vibe">Single Turn / No Harness</span>
                 </div>
-                <div class="panel-metric">
-                    <span class="p-label"><i class="fa-solid fa-dollar-sign"></i> Est. Cost:</span>
-                    <span class="p-value" id="unharnessed-cost">$0.0000</span>
-                </div>
-                <div class="panel-metric">
-                    <span class="p-label"><i class="fa-solid fa-clock"></i> Time:</span>
-                    <span class="p-value" id="unharnessed-time" style="color:var(--text-primary);">0:00</span>
-                </div>
-                <div class="panel-metric">
-                    <span class="p-label"><i class="fa-solid fa-clipboard-check"></i> Score:</span>
-                    <span class="p-value" id="unharnessed-score" style="color:var(--accent-red);">-</span>
+                <div class="panel-metrics">
+                    <div class="panel-metric">
+                        <span class="p-label"><i class="fa-solid fa-coins"></i> Tokens:</span>
+                        <span class="p-value p-value-vibe" id="unharnessed-tokens">0</span>
+                    </div>
+                    <div class="panel-metric">
+                        <span class="p-label"><i class="fa-solid fa-dollar-sign"></i> Est. Cost:</span>
+                        <span class="p-value" id="unharnessed-cost">$0.0000</span>
+                    </div>
+                    <div class="panel-metric">
+                        <span class="p-label"><i class="fa-solid fa-clock"></i> Time:</span>
+                        <span class="p-value" id="unharnessed-time" style="color:var(--text-primary);">0:00</span>
+                    </div>
+                    <div class="panel-metric">
+                        <span class="p-label"><i class="fa-solid fa-clipboard-check"></i> Score:</span>
+                        <span class="p-value" id="unharnessed-score" style="color:var(--accent-red);">-</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -192,25 +206,48 @@
                     </p>
                 </div>
             </div>
-            <div class="panel-metrics">
-                <div class="panel-metric">
-                    <span class="p-label"><i class="fa-solid fa-coins"></i> Tokens:</span>
-                    <span class="p-value p-value-harness" id="harnessed-tokens">0</span>
+            <div class="column-footer-group">
+                <div class="column-header column-header-bottom">
+                    <div class="column-title-group">
+                        <div class="column-title">
+                            <i class="fa-solid fa-microchip" style="color:var(--accent-cyan);"></i>
+                            Harness Engineering with Loop
+                        </div>
+                        <div class="column-subtitle">
+                            <code>workspaces/harnessed/</code>
+                        </div>
+                    </div>
+                    <span class="badge badge-harness">Context / Skills / TDD / Rubric</span>
                 </div>
-                <div class="panel-metric">
-                    <span class="p-label"><i class="fa-solid fa-dollar-sign"></i> Est. Cost:</span>
-                    <span class="p-value" id="harnessed-cost">$0.0000</span>
-                </div>
-                <div class="panel-metric">
-                    <span class="p-label"><i class="fa-solid fa-clock"></i> Time:</span>
-                    <span class="p-value" id="harnessed-time" style="color:var(--accent-green);">0:00</span>
-                </div>
-                <div class="panel-metric">
-                    <span class="p-label"><i class="fa-solid fa-clipboard-check"></i> Score:</span>
-                    <span class="p-value" id="harnessed-score" style="color:var(--accent-green);">-</span>
+                <div class="panel-metrics">
+                    <div class="panel-metric">
+                        <span class="p-label"><i class="fa-solid fa-coins"></i> Tokens:</span>
+                        <span class="p-value p-value-harness" id="harnessed-tokens">0</span>
+                    </div>
+                    <div class="panel-metric">
+                        <span class="p-label"><i class="fa-solid fa-dollar-sign"></i> Est. Cost:</span>
+                        <span class="p-value" id="harnessed-cost">$0.0000</span>
+                    </div>
+                    <div class="panel-metric">
+                        <span class="p-label"><i class="fa-solid fa-clock"></i> Time:</span>
+                        <span class="p-value" id="harnessed-time" style="color:var(--accent-green);">0:00</span>
+                    </div>
+                    <div class="panel-metric">
+                        <span class="p-label"><i class="fa-solid fa-clipboard-check"></i> Score:</span>
+                        <span class="p-value" id="harnessed-score" style="color:var(--accent-green);">-</span>
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Full-Width Comparison Summary Banner (Spans Both Tracks) -->
+    <div id="comparison-summary-banner" class="comparison-summary-banner" style="display:none;">
+        <div class="summary-badge">
+            <i class="fa-solid fa-scale-balanced"></i> COMPARISON SUMMARY
+        </div>
+        <div class="summary-text" id="comparison-summary-text"></div>
+        <div class="summary-timestamp" id="comparison-summary-time"></div>
     </div>
 
     <!-- Live Interactive Preview Drawer -->
