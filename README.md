@@ -130,32 +130,48 @@ harness-engineering-demo/
 ## Getting Started
 
 ### 1. Prerequisites
-- Python 3.13+
-- [`uv`](https://docs.astral.sh/uv/) installed
+- Python 3.13+ and [`uv`](https://docs.astral.sh/uv/) (for local native execution)
+- Or Docker (for local container execution)
+- Or Google Cloud SDK / `gcloud` (for Cloud Run deployment or ADC authentication)
 
-### 2. Configuration
-Copy the template configuration:
+### 2. Dual-Mode Authentication (ADC or API Key)
+
+You **do not need to specify a Gemini API key** to run comparisons if you have active Google Cloud credentials:
+
+1. **Google Cloud Application Default Credentials (ADC) — Automatic & Recommended**:
+   If you are already authenticated with Google Cloud, the workbench detects your ADC credentials automatically and connects via Vertex AI:
+   ```bash
+   gcloud auth application-default login
+   gcloud config set project YOUR_PROJECT_ID
+   ```
+   *No `.env` file or `GEMINI_API_KEY` is required.*
+
+2. **Gemini Developer API Key (Alternative)**:
+   If you prefer using a standalone Gemini API key, copy the template and configure your key:
+   ```bash
+   cp .env.template .env
+   # Edit .env and set:
+   # GEMINI_API_KEY="your-gemini-api-key"
+   ```
+
+3. **Zero-Credential Presentation Replay**:
+   Even without ADC or an API key, the workbench functions completely out-of-the-box in **Presentation Replay** mode using recorded traces.
+
+---
+
+## Running the Workbench
+
+You can run the workbench in three different ways:
+
+### 1. Run Locally (via `make run`)
+
+Start the workbench directly on your machine:
 ```bash
-cp .env.template .env
-```
+# Sync dependencies into virtual environment
+make install
 
-Edit `.env` with your Gemini API key (optional for Replay Mode):
-```ini
-GEMINI_API_KEY="your-gemini-api-key"
-MODEL_NAME="gemini-3.8-flash"
-PORT=8080
-```
-
-### 3. Run Locally (via Makefile or uv)
-You can use the included `Makefile` shortcuts:
-```bash
-make install          # Install dependencies into virtual environment
-make lint             # Run full quality suite: Codespell + Ruff + Pyright
-make test             # Run independent golden test suite
-make verify           # Run end-to-end pipeline verification
-make run              # Start the Workbench web server on port 8080
-make clean-workspaces # Clean candidate output while preserving directory READMEs
-make deploy           # Deploy directly to Google Cloud Run
+# Launch Workbench web server on port 8080 (uvicorn with hot reload)
+make run
 ```
 
 Or run directly with `uv`:
@@ -166,19 +182,47 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
 Open your browser to:
 [http://localhost:8080](http://localhost:8080)
 
----
-
-## Two Execution Modes
-
-1. **Presentation Replay (Instant)**: Click **"Presentation Replay"** in the top navigation bar. Instantly streams pre-recorded comparison traces and sets up both preview games for zero-latency conference presentations.
-2. **Run Comparison (Live)**: Click **"Run Comparison"** to invoke `gemini-3.8-flash` in real-time concurrently across both candidate pipelines.
-
----
-
-## Deploy to Google Cloud Run
-
-Deploy directly from source with the included script:
+Additional useful `Makefile` targets:
 ```bash
+make lint             # Run full quality suite: Codespell + Ruff + Pyright
+make test             # Run independent golden test suite
+make verify           # Run end-to-end pipeline verification (Unharnessed vs Harnessed)
+make clean-workspaces # Clean candidate workspaces while preserving README files
+```
+
+### 2. Run as a Local Container (Docker)
+
+To run the workbench in an isolated container identical to production:
+```bash
+# Build the production container image
+make docker-build
+
+# Run container locally on port 8080
+make docker-run
+```
+
+To run the container with your local Google Cloud ADC credentials mounted:
+```bash
+docker run -p 8080:8080 \
+  -e GOOGLE_CLOUD_PROJECT="$(gcloud config get-value project)" \
+  -v "${HOME}/.config/gcloud/application_default_credentials.json":/tmp/keys/adc.json:ro \
+  -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/adc.json \
+  harness-engineering-demo
+```
+
+Or with an API key:
+```bash
+docker run -p 8080:8080 -e GEMINI_API_KEY="your-api-key" harness-engineering-demo
+```
+
+### 3. Deploy to Google Cloud Run
+
+Deploy directly to Google Cloud Run from source using the included deployment script or `Makefile`:
+```bash
+# Deploy using Makefile target
+make deploy
+
+# Or invoke the deploy script directly
 ./scripts/deploy.sh
 ```
 
@@ -191,6 +235,15 @@ gcloud run deploy harness-engineering-demo \
     --set-env-vars MODEL_NAME=gemini-3.8-flash \
     --port 8080
 ```
+
+When running on Google Cloud Run, the workbench automatically authenticates using the Cloud Run service identity via ADC—no secret keys need to be configured.
+
+---
+
+## Two Execution Modes
+
+1. **Presentation Replay (Instant)**: Click **"Presentation Replay"** in the top navigation bar. Instantly streams pre-recorded comparison traces and sets up both preview games for zero-latency conference presentations.
+2. **Run Comparison (Live)**: Click **"Run Comparison"** to invoke `gemini-3.8-flash` in real-time concurrently across both candidate pipelines.
 
 ---
 

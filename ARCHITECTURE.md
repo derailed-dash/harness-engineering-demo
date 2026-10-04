@@ -57,6 +57,8 @@ To avoid confusion when reading this codebase, always distinguish between **Laye
 | `specs/cosmic_conquest_spec.md` | **Layer 1** | The canonical goal specification prompt provided to both agents. |
 | `specs/harness_context.md` | **Layer 1** | Reusable engineering context and guardrails (`GEMINI.md` rules) injected exclusively into the Harnessed track. |
 | `golden_tests/` | **Layer 1** | Independent acceptance test suite used to evaluate both candidate workspaces objectively. |
+| `scripts/deploy.sh` | **Layer 1** | Deployment automation script for Google Cloud Run with dynamic root path resolution. |
+| `media/` | **Layer 1** | Visual presentation assets and empirical benchmark run screenshots. |
 | `workspaces/unharnessed/` | **Layer 2** | Ephemeral directory containing the unharnessed code generated in a single open-loop turn. |
 | `workspaces/harnessed/` | **Layer 2** | Ephemeral directory containing the verified code iteratively generated with the ADK loop. |
 
@@ -324,3 +326,85 @@ When the user triggers Presentation Replay:
    ```
 3. The dashboard's presentation clock scales its tick interval by `replaySpeedMultiplier`, rapidly advancing the elapsed time display to match the 120-second authentic completion timeline.
 4. The workbench header displays an active badge (e.g. `⚡ Presentation Replay (16x Speed)`), providing audiences with transparent time-lapse feedback whilst streaming authentic token metrics, costs, and verified 14.0 / 14.0 rubric results.
+
+---
+
+## 7. Deployment Architecture & Dual-Mode Authentication Strategy
+
+The workbench is architected for zero-friction operation across local development, containerised sandboxes, and production cloud infrastructure.
+
+### 7.1 Dual-Mode Authentication Pipeline (`app/client_factory.py`)
+
+A core architectural strength of the Google GenAI SDK (`google-genai`) integration in [`app/client_factory.py`](app/client_factory.py) is its dual-mode credentials resolution. Developers do not need to generate, manage, or expose Gemini API keys when working within the Google Cloud ecosystem.
+
+```mermaid
+flowchart TD
+    Start(["Start Client Initialisation"]) --> CheckADC{"Google Cloud ADC Available?<br/>(google.auth.default())"}
+    
+    CheckADC -- Yes --> VertexAI["Initialize genai.Client(vertexai=True)<br/>Location: 'global'<br/>Project: Auto-detected GCP Project"]
+    VertexAI --> ModeADC["Auth Mode: ADC (&lt;project_id&gt;)"]
+    
+    CheckADC -- No --> CheckKey{"GEMINI_API_KEY or<br/>GOOGLE_API_KEY set?"}
+    
+    CheckKey -- Yes --> GeminiAPI["Initialize genai.Client(api_key=...)<br/>Gemini Developer API"]
+    GeminiAPI --> ModeKey["Auth Mode: GEMINI_API_KEY"]
+    
+    CheckKey -- No --> Offline["Return (None, 'NONE')<br/>Offline Presentation Replay Mode"]
+```
+
+#### Authentication Resolution Tiers
+
+1. **Tier 1 — Google Cloud Application Default Credentials (ADC) via Vertex AI (Recommended)**:
+   - `client_factory.py` first invokes `google.auth.default()`.
+   - When active developer credentials (from `gcloud auth application-default login`) or a Google Cloud service identity (Compute Engine / Cloud Run instance metadata server) are present, it auto-detects the project via `project_id` or `$GOOGLE_CLOUD_PROJECT`.
+   - The client initialises with `vertexai=True` and `location="global"`.
+   - **Zero Secret Footprint**: No `.env` file, API keys, or long-lived credentials need to be stored in the repository or injected into the container.
+2. **Tier 2 — Gemini Developer API Key (Alternative)**:
+   - If ADC credentials are absent, the factory checks for `GEMINI_API_KEY` (configured in `.env` or system environment).
+   - Initialises `genai.Client(api_key=api_key)` against the standard Gemini Developer API endpoint.
+   - Ideal for developers evaluating the workbench on non-GCP workstations or without a cloud project.
+3. **Tier 3 — Offline Presentation Replay**:
+   - If neither credential type is available, the factory returns `(None, "NONE")`.
+   - The application boots normally and enables instant, zero-credential **Presentation Replay** using pre-recorded event streams in `app/replay/replay_data.json` and snapshots.
+
+---
+
+### 7.2 Deployment Topologies & Runtime Modes
+
+The application runs seamlessly across three execution environments:
+
+```
++-----------------------------------------------------------------------------------+
+|                        Deployment & Runtime Topologies                            |
++-------------------------+--------------------------------+------------------------+
+|   1. Local Host Native  |     2. Local Docker Container  |  3. Google Cloud Run   |
++-------------------------+--------------------------------+------------------------+
+| * Command: make run     | * Command: make docker-run     | * Command: make deploy |
+| * Runtime: Python 3.13  | * Image: Python 3.13-slim + uv | * Serverless Container |
+| * Uvicorn with reload   | * Isolated filesystem sandbox  | * Single Port (8080)   |
+| * Fast dev iteration    | * Volume-mountable ADC key     | * Managed ADC Identity |
++-------------------------+--------------------------------+------------------------+
+```
+
+1. **Local Host Native (`make run`)**:
+   - Executed via `uv run uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload --reload-dir app`.
+   - Optimised for live development and rapid iteration.
+   - Directly executes `pytest` and static linters against local Python 3.13 virtual environments.
+
+2. **Local Container Execution (`make docker-build` / `make docker-run`)**:
+   - Packaged with a production-grade multi-stage `Dockerfile` based on `python:3.13-slim` with Astral `uv`.
+   - Replicates production container constraints locally.
+   - Can run hermetically with API keys or with local host ADC credentials forwarded via volume mount:
+     ```bash
+     docker run -p 8080:8080 \
+       -e GOOGLE_CLOUD_PROJECT="$(gcloud config get-value project)" \
+       -v "${HOME}/.config/gcloud/application_default_credentials.json":/tmp/keys/adc.json:ro \
+       -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/adc.json \
+       harness-engineering-demo
+     ```
+
+3. **Serverless Production on Google Cloud Run ([`scripts/deploy.sh`](scripts/deploy.sh) / `make deploy`)**:
+   - Deploys as a fully managed, auto-scaling container on Google Cloud Run.
+   - **Unified Port 8080 Architecture**: A single container port hosts the Layer 1 Workbench dashboard, the Server-Sent Events (SSE) streaming engine, and the reverse-proxied Layer 2 target application preview routes (`/preview/unharnessed` and `/preview/harnessed`).
+   - **Automatic Service Identity**: Cloud Run's built-in compute service account satisfies ADC automatically via the link-local metadata server (`http://metadata.google.internal`), requiring zero environment secrets.
+   - **Robust Script Resolution**: [`scripts/deploy.sh`](scripts/deploy.sh) dynamically detects the project root (`SCRIPT_DIR/..`) so deployment succeeds whether executed from the repo root or inside subdirectories.
