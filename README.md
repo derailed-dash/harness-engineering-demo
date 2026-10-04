@@ -5,6 +5,8 @@ An interactive demonstration application accompanying the trilogy series **"Beyo
 This workbench visually and empirically proves the core maxim:
 $$\text{Agent} = \text{Model} + \text{Harness}$$
 
+![Harness Engineering Workbench](media/workbench-screenshot.png)
+
 ---
 
 ## What This Demo Demonstrates
@@ -34,6 +36,40 @@ A key insight simulated in this workbench is the clean architectural separation 
 - **Harness Context & Guardrails (`specs/harness_context.md`)**: Reusable, persistent organisation- and team-level engineering policies (`GEMINI.md` rules, PEP 585 typing, mandatory TDD, Pydantic input parameterisation, and UI contracts) defining *how* code must be engineered.
 
 In enterprise software engineering, you never pollute individual feature tickets or prompts with repetitive coding hygiene instructions. Engineering standards are governed centrally at the organisation or team level and automatically inherited by the harness across all tasks.
+
+---
+
+## Typical Results & Empirical Comparison
+
+A representative head-to-head comparison run reveals a stark contrast across latency, token consumption, total cost, and functional correctness:
+
+![Results Metrics and Comparison Summary](media/results-metrics.png)
+
+| Metric | Unharnessed Track (Vibe Coding) | Harnessed Track (Loop Engineering) | Operational Advantage |
+|:---|:---|:---|:---|
+| **Execution Duration** | **2m 16s** (136 seconds) | **0m 32s** (32 seconds) | **4.25x faster** |
+| **Combined Tokens** | 45,571 tokens | 24,287 tokens | **46.7% fewer tokens** |
+| **Estimated Cost** | $0.0168 | $0.0067 | **60.1% cheaper** |
+| **Rubric Score** | **9.0 / 14.0** (Failed) | **14.0 / 14.0** (Passed) | **100% gate pass** |
+| **Functional Outcome** | ❌ Broken / Non-functional | ✅ Fully playable & verified | **Only harnessed code works** |
+
+### Why the Harnessed Track Outperforms Vibe Coding
+
+1. **Structured Discipline Beats Monolithic Hallucination**:
+   - In the **Unharnessed track**, the model is given a broad, open-loop prompt without architectural guardrails or intermediate feedback tools. It attempts to emit a sprawling, full-stack application in a single shot. This generates excessive token volume (45,571 tokens), bloats wall-clock generation time (2m 16s), and leads to ungrounded code that fails basic integration contracts.
+   - In the **Harnessed track**, specialised skills (`test-driven-development`, `api-and-interface-design`, `gemini-api-dev`) and explicit guardrails guide the model into concise, modular phases. It writes unit tests first, implements only what is required, and avoids redundant boilerplate—generating **46.7% fewer tokens** and completing **4.25x faster**.
+
+2. **Autonomous Self-Healing via Rubric Diagnostics**:
+   - The unharnessed agent has no second chance: any flaws generated on turn 1 remain permanently baked into the candidate workspace (omitting unit tests, violating PEP 585 typing rules, and ignoring sector graph adjacency constraints, leaving it at **9.0 / 14.0**).
+   - The harnessed agent evaluates candidate code against the 14-point rubric on every turn. Specific diagnostic feedback is reinjected into living memory, enabling targeted remediation in Iteration 2 to achieve a verified **14.0 / 14.0 (100%)** score.
+
+3. **Lower Operational Cost Through Targeted Efficiency**:
+   - Because open-loop vibe coding generates bloated files, repetitive boilerplate, and unconstrained trivia content, its financial cost is significantly higher ($0.0168).
+   - The harnessed feedback loop keeps each model call constrained and targeted, resulting in a **60.1% cost reduction** ($0.0067) while guaranteeing production-grade quality.
+
+4. **Guaranteed Functional Correctness**:
+   - Without test runner feedback or schema validation, the unharnessed prototype suffers from broken API route contracts, missing dynamic state validation, and unhandled edge cases, rendering it unplayable.
+   - The harnessed track's TDD loop and dynamic TestClient boot verify backend endpoints and frontend DOM event wiring, delivering a fully interactive and verified game.
 
 ---
 
