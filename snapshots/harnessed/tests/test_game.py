@@ -1,7 +1,7 @@
 """TDD Unit test suite for Cosmic Conquest game rules."""
 
+import pytest
 import game_engine
-
 
 def test_initial_state():
     state = game_engine.get_initial_state()

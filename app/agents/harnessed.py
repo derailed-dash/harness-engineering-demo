@@ -21,6 +21,7 @@ from app.config import (
     load_harness_context,
     load_harness_skills,
 )
+from app.living_memory import LivingMemoryManager
 from app.rubric.evaluator import evaluate_candidate_workspace
 from app.token_tracker import TokenMetrics
 
@@ -52,6 +53,7 @@ def get_harnessed_initial_prompt() -> str:
             prompt_parts.append(f"## Skill: {skill_name}\n\n{skill_content}\n\n")
 
     return "".join(prompt_parts)
+
 
 
 
@@ -377,6 +379,10 @@ async def run_harnessed_pipeline(
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Execute the Harnessed Autonomous Loop Engineering workflow."""
     start_time = time.time()
+    memory_mgr = LivingMemoryManager()
+    session_id = f"harness-run-{int(start_time)}"
+    memory_mgr.init_ledger(session_id=session_id, goal_spec="specs/cosmic_conquest_spec.md")
+
     yield {
         "stage": "starting",
         "message": "Initialising Harness: Shared spec (specs/cosmic_conquest_spec.md) + GEMINI.md loaded...",
@@ -415,7 +421,19 @@ async def run_harnessed_pipeline(
 
     # Track prompt tokens for context ingestion
     token_tracker.add_usage(prompt=2400, candidate=3800, label="Harnessed Iteration 1 (TDD & Build)")
-    _write_harnessed_iteration_1(workspace_path)
+    files_it1 = _write_harnessed_iteration_1(workspace_path)
+    
+    yield {
+        "stage": "raw_response",
+        "message": "Architectural plan and TDD test scaffold generated from shared specification.",
+        "response_text": (
+            "### Architectural Plan & TDD Strategy\n"
+            "- Architecture: Decouple domain game engine (`game_engine.py`) from HTTP transport (`main.py`).\n"
+            "- Test Plan: Author unit tests (`tests/test_game.py`) first to lock down star map topology and combat.\n"
+            "- Gemini Integration: Implement `trivia_service.py` with canonical Sci-Fi movie validation.\n"
+            "- Deliverables: Generated initial implementation across 4 core modules."
+        ),
+    }
     
     yield {
         "stage": "tool_exec",
@@ -444,6 +462,15 @@ async def run_harnessed_pipeline(
         workspace_path,
         token_tracker=token_tracker,
     )
+
+    # Persist Iteration 1 scorecard to disk in living memory ledger
+    memory_mgr.record_iteration(
+        iteration=1,
+        max_iterations=MAX_ITERATIONS,
+        scorecard=scorecard_it1,
+        actions_taken=files_it1,
+        strategy_notes="TDD unit test scaffold authored and passed. Evaluator flagged missing interactive combat modal in static/index.html.",
+    )
     
     yield {
         "stage": "rubric_update",
@@ -457,7 +484,7 @@ async def run_harnessed_pipeline(
         yield {
             "stage": "living_memory",
             "iteration": 1,
-            "message": "Living Memory Diagnostics: Reinjecting failure points to guide autonomous remediation in Iteration 2.",
+            "message": "Living Memory Diagnostics: Persisted to harness/output/LIVING_MEMORY.md. Reinjecting failure points to guide autonomous remediation in Iteration 2.",
             "diagnostics": scorecard_it1["diagnostics"],
         }
 
@@ -470,7 +497,7 @@ async def run_harnessed_pipeline(
         }
 
         token_tracker.add_usage(prompt=1200, candidate=1900, label="Harnessed Iteration 2 (Self-Healing)")
-        _apply_harnessed_self_healing_iteration_2(workspace_path)
+        files_it2 = _apply_harnessed_self_healing_iteration_2(workspace_path)
 
         yield {
             "stage": "evaluating",
@@ -484,12 +511,22 @@ async def run_harnessed_pipeline(
             token_tracker=token_tracker,
         )
 
+        # Persist Iteration 2 scorecard to disk in living memory ledger
+        memory_mgr.record_iteration(
+            iteration=2,
+            max_iterations=MAX_ITERATIONS,
+            scorecard=scorecard_it2,
+            actions_taken=files_it2,
+            strategy_notes="Self-healing completed: interactive combat modal injected into static/index.html and imports sorted.",
+        )
+
         yield {
             "stage": "rubric_update",
             "iteration": 2,
             "scorecard": scorecard_it2,
             "message": f"Iteration 2 Score: {scorecard_it2['score']:.1f}/{scorecard_it2['max_score']:.1f} (100% Pass Rate).",
         }
+
 
         duration_sec = round(time.time() - start_time, 1)
         mins = int(duration_sec // 60)

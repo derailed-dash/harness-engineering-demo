@@ -27,6 +27,7 @@ from app.config import (
     load_harness_context,
     load_harness_skills,
 )
+from app.living_memory import LivingMemoryManager
 from app.orchestrator import DemoOrchestrator
 from app.replay.player import stream_replay_events
 
@@ -52,6 +53,7 @@ def index(request: Request) -> Any:
             "spec_content": load_cosmic_conquest_spec(),
             "harness_context_content": load_harness_context(),
             "harness_skills": load_harness_skills(),
+            "living_memory_content": LivingMemoryManager().get_content(),
         },
     )
 
@@ -103,6 +105,17 @@ def get_harness_context() -> dict[str, Any]:
         "filename": "harness/harness_context.md",
         "title": "Engineering Context & Harness Guardrails (GEMINI.md)",
         "content": content,
+    }
+
+
+@app.get("/api/living-memory")
+def get_living_memory() -> dict[str, Any]:
+    """Return the raw markdown content and metadata for the living memory ledger."""
+    manager = LivingMemoryManager()
+    return {
+        "filename": "harness/output/LIVING_MEMORY.md",
+        "title": "Autonomous Living Memory & Diagnostic Ledger",
+        "content": manager.get_content(),
     }
 
 
@@ -225,19 +238,37 @@ async def preview_unharnessed_ui():
     """Serve the unharnessed prototype UI."""
     html_file = UNHARNESSED_DIR / "static" / "index.html"
     no_cache_headers = {"Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "Expires": "0"}
-    if not html_file.exists():
-        return HTMLResponse(
-            """<!DOCTYPE html><html><body style="background:#0a0c16;color:#e0e6ed;font-family:sans-serif;padding:60px 20px;text-align:center;">
-            <h2>Unharnessed Workspace Preview</h2>
-            <p style="color:#ff3366;font-size:1.05rem;margin-top:10px;">Status: Awaiting generation run.</p>
-            <p style="color:#94a3b8;font-size:0.9rem;margin-top:6px;">Click <strong>'Run Comparison'</strong> or <strong>'Presentation Replay'</strong> in the header to build and inspect this workspace.</p>
-            </body></html>""",
-            headers=no_cache_headers,
-        )
-    content = html_file.read_text(encoding="utf-8")
-    # Patch API paths to point to /preview/unharnessed/api/
-    patched = content.replace("'/api/", "'/preview/unharnessed/api/").replace('"/api/', '"/preview/unharnessed/api/')
-    return HTMLResponse(patched, headers=no_cache_headers)
+    if html_file.exists():
+        content = html_file.read_text(encoding="utf-8")
+        patched = content.replace("'/api/", "'/preview/unharnessed/api/").replace('"/api/', '"/preview/unharnessed/api/')
+        return HTMLResponse(patched, headers=no_cache_headers)
+
+    # Fallback to inline HTML in main.py if present
+    main_py = UNHARNESSED_DIR / "main.py"
+    if main_py.exists():
+        text = main_py.read_text(encoding="utf-8")
+        if "Cosmic Conquest" in text:
+            return HTMLResponse(
+                """<!DOCTYPE html>
+<html>
+<head><title>Cosmic Conquest (Vibe Built)</title></head>
+<body style="background:#111; color:#eee; font-family:sans-serif; text-align:center; padding:50px;">
+    <h1>Cosmic Conquest (Vibe Built Prototype)</h1>
+    <p>Status: Prototype created without engineering harness.</p>
+    <div id="status">Shields: 100 | Sectors: Earth</div>
+</body>
+</html>""",
+                headers=no_cache_headers,
+            )
+
+    return HTMLResponse(
+        """<!DOCTYPE html><html><body style="background:#0a0c16;color:#e0e6ed;font-family:sans-serif;padding:60px 20px;text-align:center;">
+        <h2>Unharnessed Workspace Preview</h2>
+        <p style="color:#ff3366;font-size:1.05rem;margin-top:10px;">Status: Awaiting generation run.</p>
+        <p style="color:#94a3b8;font-size:0.9rem;margin-top:6px;">Click <strong>'Run Comparison'</strong> or <strong>'Presentation Replay'</strong> in the header to build and inspect this workspace.</p>
+        </body></html>""",
+        headers=no_cache_headers,
+    )
 
 
 # In-memory unharnessed game state instance if candidate uses GameState class

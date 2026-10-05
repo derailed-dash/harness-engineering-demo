@@ -5,7 +5,7 @@ An interactive demonstration application accompanying the trilogy series **"Beyo
 This workbench visually and empirically proves the core maxim:
 $$\text{Agent} = \text{Model} + \text{Harness}$$
 
-![Harness Engineering Workbench](media/workbench-screenshot.png)
+![Harness Engineering Workbench](media/sbs-top.png)
 
 ---
 

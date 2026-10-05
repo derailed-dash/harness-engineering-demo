@@ -7,11 +7,12 @@ and returning HTTP 400 with actionable feedback on invalid attacks.
 
 from pathlib import Path
 
-import game_engine
-import trivia_service
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
+
+import game_engine
+import trivia_service
 
 app = FastAPI(title="Cosmic Trivia & Strategy Conquest")
 

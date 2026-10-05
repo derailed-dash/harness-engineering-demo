@@ -154,3 +154,51 @@ def test_preview_endpoints_cleared_after_reset() -> None:
     # Re-populate workspaces cleanly so subsequent test runs remain valid
     restore_replay_workspaces()
 
+
+def test_living_memory_persistence_reset_and_ui() -> None:
+    """Verify that living memory is persisted to disk, cleared on reset, and exposed via API and UI."""
+    from app.config import LIVING_MEMORY_PATH
+    from app.replay.player import restore_replay_workspaces
+
+    client = TestClient(app)
+
+    # 1. Populate candidate workspaces / replay data which initialises living memory
+    restore_replay_workspaces()
+    assert LIVING_MEMORY_PATH.exists()
+    content = LIVING_MEMORY_PATH.read_text(encoding="utf-8")
+    assert "Living Memory & Diagnostic Ledger" in content
+    assert "Iteration 1" in content
+    assert "Iteration 2" in content
+    assert "State Mutation Guard" in content
+
+    # 2. Test GET /api/living-memory
+    res = client.get("/api/living-memory")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["filename"] == "harness/output/LIVING_MEMORY.md"
+    assert "Autonomous Living Memory" in data["title"]
+    assert "Iteration 1" in data["content"]
+    assert "Iteration 2" in data["content"]
+
+    # 3. Test index HTML embedding & modal triggers
+    res_html = client.get("/")
+    assert res_html.status_code == 200
+    html = res_html.text
+    assert 'id="living-memory-data"' in html
+    assert "openLivingMemoryModal()" in html
+    assert "harness/output/LIVING_MEMORY.md" in html
+
+    # 4. Test /api/reset clears living memory ledger
+    reset_res = client.post("/api/reset")
+    assert reset_res.status_code == 200
+    assert not LIVING_MEMORY_PATH.exists()
+
+    # When missing, /api/living-memory returns placeholder
+    res_empty = client.get("/api/living-memory")
+    assert res_empty.status_code == 200
+    assert "No active run" in res_empty.json()["content"]
+
+    # Re-populate workspaces for next tests
+    restore_replay_workspaces()
+
+

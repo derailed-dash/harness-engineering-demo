@@ -40,6 +40,9 @@ GOLDEN_TESTS_DIR = BASE_DIR / "golden_tests"
 REPLAY_DATA_PATH = BASE_DIR / "app" / "replay" / "replay_data.json"
 REPLAY_SNAPSHOTS_DIR = BASE_DIR / "snapshots"
 HARNESS_SKILLS_DIR = HARNESS_DIR / "skills"
+HARNESS_OUTPUT_DIR = HARNESS_DIR / "output"
+LIVING_MEMORY_PATH = HARNESS_OUTPUT_DIR / "LIVING_MEMORY.md"
+
 
 
 def load_cosmic_conquest_spec() -> str:

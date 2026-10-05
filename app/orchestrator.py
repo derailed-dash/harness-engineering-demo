@@ -1,6 +1,6 @@
 """Harness Demo Orchestrator.
 
-Coordinates side-by-side execution of Unharnessed One-Shot vs Harnessed ADK pipelines.
+Coordinates side-by-side execution of Unharnessed Single Pass vs Harnessed ADK pipelines.
 Provides Server-Sent Events (SSE) streaming for real-time Workbench UI rendering.
 """
 
@@ -96,6 +96,11 @@ class DemoOrchestrator:
         self.harnessed_tokens = TokenMetrics()
         cleaned_unharnessed = clean_workspace_directory(UNHARNESSED_DIR)
         cleaned_harnessed = clean_workspace_directory(HARNESSED_DIR)
+
+        # Clear living memory ledger for fresh comparison runs
+        from app.living_memory import LivingMemoryManager
+        LivingMemoryManager().reset()
+
         return {
             "unharnessed": cleaned_unharnessed,
             "harnessed": cleaned_harnessed,
@@ -127,7 +132,7 @@ class DemoOrchestrator:
             try:
                 await queue.put({
                     "type": "unharnessed_start",
-                    "message": "Launching Unharnessed One-Shot (Vibe Coding)...",
+                    "message": "Launching Unharnessed Single Pass (Vibe Coding)...",
                 })
                 async for evt in run_unharnessed_pipeline(UNHARNESSED_DIR, self.unharnessed_tokens):
                     await queue.put({

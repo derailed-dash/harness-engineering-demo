@@ -8,3 +8,7 @@ __pycache__/
 workspaces/*/*
 !workspaces/*/README.md
 !workspaces/README.md
+
+# Autonomous loop persisted diagnostic memory ledger
+harness/output/
+

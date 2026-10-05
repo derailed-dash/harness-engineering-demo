@@ -305,6 +305,8 @@ function handleStreamEvent(evt) {
         const data = evt.data;
         if (data.stage === 'starting') {
             appendFeedCard('unharnessed-feed', 'Prompt Dispatched', data.message);
+        } else if (data.stage === 'raw_response') {
+            appendFeedCard('unharnessed-feed', 'Model Response Received', data.message, data.response_text);
         } else if (data.stage === 'generated') {
             appendFeedCard('unharnessed-feed', 'Generation Complete', data.message, data.files ? data.files.join(', ') : null);
             reloadUnharnessedPreview(true);
@@ -370,6 +372,8 @@ function handleStreamEvent(evt) {
         } else if (data.stage === 'iteration_start') {
             appendFeedCard('harnessed-feed', `Iteration ${data.iteration} Started`, data.message, null, true);
             reloadHarnessedPreview(false);
+        } else if (data.stage === 'raw_response') {
+            appendFeedCard('harnessed-feed', 'Initial Scaffold Generated', data.message, data.response_text);
         } else if (data.tool_exec) {
             appendFeedCard('harnessed-feed', `Tool Execution: ${data.tool}`, data.message, data.output);
         } else if (data.stage === 'tool_exec') {
@@ -577,6 +581,13 @@ const DOC_CONFIGS = {
         dataId: 'skill-content-gemini-api-dev',
         footerNote: '<i class="fa-solid fa-brain" style="color:var(--accent-cyan);"></i> Externalised skill providing google-genai SDK guidance, structured outputs, and domain grounding.',
     },
+    living_memory: {
+        title: 'harness/output/LIVING_MEMORY.md',
+        subtitle: 'Autonomous Living Memory & Diagnostic Ledger (Persisted Loop State)',
+        iconClass: 'fa-solid fa-book-journal-whills modal-icon',
+        dataId: 'living-memory-data',
+        footerNote: '<i class="fa-solid fa-clock-rotate-left" style="color:var(--accent-green);"></i> Persistent diagnostic ledger recording iterations, rubric scorecards, defect traces, and self-healing strategies.',
+    },
 };
 
 
@@ -664,9 +675,37 @@ function openSkillModal(skillName) {
     window.addEventListener('keydown', handleSpecModalKeydown);
 }
 
+function openLivingMemoryModal() {
+    // Optionally fetch freshest content dynamically if available
+    fetch('/api/living-memory')
+        .then(res => res.json())
+        .then(data => {
+            const dataEl = document.getElementById('living-memory-data');
+            if (dataEl && data.content) {
+                dataEl.textContent = data.content;
+            }
+            displayDocument('living_memory');
+            const modal = document.getElementById('spec-modal');
+            if (modal) {
+                modal.classList.add('open');
+                window.addEventListener('keydown', handleSpecModalKeydown);
+            }
+        })
+        .catch(() => {
+            displayDocument('living_memory');
+            const modal = document.getElementById('spec-modal');
+            if (modal) {
+                modal.classList.add('open');
+                window.addEventListener('keydown', handleSpecModalKeydown);
+            }
+        });
+}
+
 function openDocModal(docType) {
     if (docType === 'harness_context') {
         openHarnessContextModal();
+    } else if (docType === 'living_memory') {
+        openLivingMemoryModal();
     } else if (docType in DOC_CONFIGS) {
         openSkillModal(docType);
     } else {

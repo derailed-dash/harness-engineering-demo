@@ -75,10 +75,20 @@
                         <i class="fa-solid fa-arrow-up-right-from-square spec-open-icon"></i>
                     </button>
                 </div>
+                <div class="spec-row">
+                    <span class="spec-guardrail-label" style="background:rgba(217, 119, 6, 0.15); border-color:rgba(245, 158, 11, 0.4); color:var(--accent-orange);">
+                        <i class="fa-solid fa-book-journal-whills"></i> PERSISTENCE
+                    </span>
+                    <button type="button" class="spec-file-badge" id="living-memory-badge" onclick="openLivingMemoryModal()" title="Click to view autonomous living memory & diagnostic ledger (persisted loop state)" style="border-color:rgba(245, 158, 11, 0.35);">
+                        <i class="fa-solid fa-clock-rotate-left" style="color:var(--accent-orange);"></i>
+                        <span>harness/output/LIVING_MEMORY.md</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square spec-open-icon"></i>
+                    </button>
+                </div>
 
             </div>
             <div class="spec-note">
-                <i class="fa-solid fa-circle-info"></i> Goal spec is <strong>shared</strong>; only the Harnessed track receives <strong>harness guardrails</strong>.
+                <i class="fa-solid fa-circle-info"></i> Goal spec is <strong>shared</strong>; only the Harnessed track receives <strong>harness guardrails</strong>, <strong>specialised skills</strong>, and <strong>persisted living memory</strong>.
             </div>
         </div>
 
@@ -299,6 +309,7 @@
             <div class="modal-body" id="spec-modal-body">
                 <script type="text/plain" id="spec-content-data">{{ spec_content | safe }}</script>
                 <script type="text/plain" id="harness-context-data">{{ harness_context_content | safe }}</script>
+                <script type="text/plain" id="living-memory-data">{{ living_memory_content | safe }}</script>
                 {% for skill_key, skill_body in harness_skills.items() %}
                 <script type="text/plain" id="skill-content-{{ skill_key }}">{{ skill_body | safe }}</script>
                 {% endfor %}

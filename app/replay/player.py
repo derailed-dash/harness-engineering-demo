@@ -77,6 +77,49 @@ def restore_replay_workspaces(
         _write_harnessed_iteration_1(dest_h)
         _apply_harnessed_self_healing_iteration_2(dest_h)
 
+    # Populate living memory ledger for replay demonstrations
+    from app.living_memory import LivingMemoryManager
+    lm = LivingMemoryManager()
+    lm.init_ledger(
+        session_id="replay-presentation-session",
+        goal_spec="Cosmic Trivia & Strategy Conquest (specs/cosmic_conquest_spec.md)",
+    )
+    lm.record_iteration(
+        iteration=1,
+        max_iterations=3,
+        scorecard={
+            "score": 10.0,
+            "max_score": 14.0,
+            "is_passing": False,
+            "failed_checks": [
+                {
+                    "id": "SEC-01",
+                    "name": "State Mutation Guard",
+                    "details": "POST /api/action modifies persistent game state via unsafe direct assignment.",
+                },
+                {
+                    "id": "ERR-02",
+                    "name": "Structured JSON Error Payload",
+                    "details": "Non-existent territory lookup triggered an unhandled KeyError rather than structured 404.",
+                },
+            ],
+        },
+        actions_taken=["game.py", "static/game.js", "tests/test_game.py"],
+        strategy_notes="Isolate state mutations to pure transition handler. Wrap API endpoints in exception boundary to emit schema-compliant error envelopes.",
+    )
+    lm.record_iteration(
+        iteration=2,
+        max_iterations=3,
+        scorecard={
+            "score": 14.0,
+            "max_score": 14.0,
+            "is_passing": True,
+            "failed_checks": [],
+        },
+        actions_taken=["game.py", "tests/test_game.py"],
+        strategy_notes="All 14 rubric checks passed. Zero regressions detected. Deploying candidate build.",
+    )
+
 
 async def stream_replay_events() -> AsyncGenerator[dict[str, Any], None]:
     """Stream cached presentation replay events with authentic speed scaling."""
