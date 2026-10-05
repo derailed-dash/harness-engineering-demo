@@ -61,9 +61,12 @@ The galaxy contains at least 6 canonical sectors:
 - Questions must always reference a real movie title, release year, or famous plot premise.
 - Must support dynamic Gemini generation via `google-genai` with fallback to curated authentic questions if network or API keys are unavailable.
 
-### 3.3 Web User Interface
-- Modern responsive layout with a neon cosmic dark-mode theme and an ambient or animated starfield background (e.g. dynamic canvas particles or twinkling CSS stars) establishing deep space immersion.
-- Visual Star Map rendering sectors with adjacency lines and status indicators (Controlled = Cyan/Green, Valid Target = Pulsing Gold, Locked = Dim Gray).
-- Real-time HUD displaying Shields, Energy, Sectors Liberated, and Turn Count.
-- Interactive modal dialogue for answering trivia challenges.
-- Clear Victory and Defeat notifications.
+### 3.3 Web User Interface Client (`static/index.html`)
+- Deliver a complete, self-contained interactive web client in `static/index.html` served by FastAPI at `/`:
+  - Modern responsive layout with a neon cosmic dark-mode theme and an ambient or animated starfield background (e.g. dynamic canvas particles or twinkling CSS stars) establishing deep space immersion.
+  - Visual Star Map rendering sectors with adjacency lines and status indicators (Controlled = Cyan/Green, Valid Target = Pulsing Gold, Locked = Dim Gray).
+  - Real-time HUD displaying Shields, Energy, Sectors Liberated, and Turn Count.
+  - Progression Ergonomics: Provide direct single-action attack affordances on sector cards or map tiles without disconnected multi-step barriers (e.g. avoid requiring clicking a map coordinate to populate a sidebar and then clicking a separate disabled button).
+  - Interactive combat challenge modal dialogue triggered directly by clicking valid sector targets.
+  - Active client-side fetch calls to `/api/game/attack`, `/api/game/answer`, and `/api/game/state` to update HUD and territory in real time.
+  - Clear Victory and Defeat notifications.

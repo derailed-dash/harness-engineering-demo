@@ -19,6 +19,7 @@ from app.config import (
     MAX_ITERATIONS,
     load_cosmic_conquest_spec,
     load_harness_context,
+    load_harness_skills,
 )
 from app.rubric.evaluator import evaluate_candidate_workspace
 from app.token_tracker import TokenMetrics
@@ -33,15 +34,25 @@ def _get_harnessed_game_html() -> str:
 
 
 def get_harnessed_initial_prompt() -> str:
-    """Build the harnessed initial prompt combining the shared specification with engineering context."""
+    """Build the harnessed initial prompt combining the shared specification with engineering context and skills."""
     spec = load_cosmic_conquest_spec()
     harness_context = load_harness_context()
-    return (
-        "# TASK GOAL (Shared Specification: specs/cosmic_conquest_spec.md)\n\n"
-        f"{spec}\n\n"
-        "---\n\n"
-        f"{harness_context}\n"
-    )
+    skills = load_harness_skills()
+
+    prompt_parts = [
+        "# TASK GOAL (Shared Specification: specs/cosmic_conquest_spec.md)\n\n",
+        f"{spec}\n\n",
+        "---\n\n",
+        f"{harness_context}\n\n",
+    ]
+
+    if skills:
+        prompt_parts.append("---\n\n# SPECIALISED ENGINEERING SKILLS (harness/skills/)\n\n")
+        for skill_name, skill_content in sorted(skills.items()):
+            prompt_parts.append(f"## Skill: {skill_name}\n\n{skill_content}\n\n")
+
+    return "".join(prompt_parts)
+
 
 
 

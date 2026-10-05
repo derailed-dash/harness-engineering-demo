@@ -34,10 +34,12 @@ UNHARNESSED_DIR = WORKSPACES_DIR / "unharnessed"
 HARNESSED_DIR = WORKSPACES_DIR / "harnessed"
 SPECS_DIR = BASE_DIR / "specs"
 COSMIC_CONQUEST_SPEC_PATH = SPECS_DIR / "cosmic_conquest_spec.md"
-HARNESS_CONTEXT_PATH = SPECS_DIR / "harness_context.md"
+HARNESS_DIR = BASE_DIR / "harness"
+HARNESS_CONTEXT_PATH = HARNESS_DIR / "harness_context.md"
 GOLDEN_TESTS_DIR = BASE_DIR / "golden_tests"
 REPLAY_DATA_PATH = BASE_DIR / "app" / "replay" / "replay_data.json"
 REPLAY_SNAPSHOTS_DIR = BASE_DIR / "snapshots"
+HARNESS_SKILLS_DIR = HARNESS_DIR / "skills"
 
 
 def load_cosmic_conquest_spec() -> str:
@@ -48,8 +50,21 @@ def load_cosmic_conquest_spec() -> str:
 
 
 def load_harness_context() -> str:
-    """Load harness context and engineering guardrails from specs/harness_context.md."""
+    """Load harness context and engineering guardrails from harness/harness_context.md."""
     if HARNESS_CONTEXT_PATH.is_file():
         return HARNESS_CONTEXT_PATH.read_text(encoding="utf-8")
     return ""
+
+
+
+def load_harness_skills() -> dict[str, str]:
+    """Load all specialised skills from harness/skills/<skill-name>/SKILL.md."""
+    skills: dict[str, str] = {}
+    if HARNESS_SKILLS_DIR.is_dir():
+        for skill_dir in sorted(HARNESS_SKILLS_DIR.iterdir()):
+            skill_md = skill_dir / "SKILL.md"
+            if skill_dir.is_dir() and skill_md.is_file():
+                skills[skill_dir.name] = skill_md.read_text(encoding="utf-8")
+    return skills
+
 

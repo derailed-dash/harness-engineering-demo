@@ -61,7 +61,7 @@ def test_index_harness_context_embedded() -> None:
 
     # Clickable buttons and links must be present
     assert "openHarnessContextModal()" in html
-    assert "specs/harness_context.md" in html
+    assert "harness/harness_context.md" in html
 
     # Verify key harness guardrail phrases are embedded
     assert "Engineering Context & Harness Guardrails" in html
@@ -74,12 +74,52 @@ def test_api_harness_context_endpoint() -> None:
     response = client.get("/api/harness-context")
     assert response.status_code == 200
     data = response.json()
-    assert data["filename"] == "specs/harness_context.md"
+    assert data["filename"] == "harness/harness_context.md"
     assert "Engineering Context & Harness Guardrails" in data["title"]
     assert "Strict PEP 585" in data["content"]
 
 
+
+def test_api_skills_endpoints_and_embedding() -> None:
+    """Verify GET /api/skills and /api/skills/{skill_name} return specialised skills and are embedded in HTML."""
+    client = TestClient(app)
+
+    # 1. Test /api/skills listing
+    res_list = client.get("/api/skills")
+    assert res_list.status_code == 200
+    skills_data = res_list.json()
+    assert skills_data["count"] == 3
+    assert "test-driven-development" in skills_data["skills"]
+    assert "api-and-interface-design" in skills_data["skills"]
+    assert "gemini-api-dev" in skills_data["skills"]
+
+    # 2. Test individual skill endpoint
+    res_tdd = client.get("/api/skills/test-driven-development")
+    assert res_tdd.status_code == 200
+    tdd_data = res_tdd.json()
+    assert tdd_data["skill"] == "test-driven-development"
+    assert "harness/skills/test-driven-development/SKILL.md" in tdd_data["filename"]
+    assert "RED" in tdd_data["content"]
+    assert "GREEN" in tdd_data["content"]
+
+    # 3. Test missing skill returns 404
+    res_404 = client.get("/api/skills/unknown-skill")
+    assert res_404.status_code == 404
+
+    # 4. Test skills are embedded in index HTML and have click triggers
+    res_html = client.get("/")
+    assert res_html.status_code == 200
+    html = res_html.text
+    assert 'id="skill-content-test-driven-development"' in html
+    assert 'id="skill-content-api-and-interface-design"' in html
+    assert 'id="skill-content-gemini-api-dev"' in html
+    assert "openSkillModal('test-driven-development')" in html
+    assert "openSkillModal('api-and-interface-design')" in html
+    assert "openSkillModal('gemini-api-dev')" in html
+
+
 def test_preview_endpoints_cleared_after_reset() -> None:
+
     """Verify that calling /api/reset resets preview frames to awaiting placeholders."""
     from app.replay.player import restore_replay_workspaces
 

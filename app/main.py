@@ -25,6 +25,7 @@ from app.config import (
     UNHARNESSED_DIR,
     load_cosmic_conquest_spec,
     load_harness_context,
+    load_harness_skills,
 )
 from app.orchestrator import DemoOrchestrator
 from app.replay.player import stream_replay_events
@@ -50,8 +51,10 @@ def index(request: Request) -> Any:
             "auth_mode": auth_mode,
             "spec_content": load_cosmic_conquest_spec(),
             "harness_context_content": load_harness_context(),
+            "harness_skills": load_harness_skills(),
         },
     )
+
 
 
 @app.get("/api/status")
@@ -97,13 +100,38 @@ def get_harness_context() -> dict[str, Any]:
     """Return the raw markdown content and metadata for the harness engineering context."""
     content = load_harness_context()
     return {
-        "filename": "specs/harness_context.md",
+        "filename": "harness/harness_context.md",
         "title": "Engineering Context & Harness Guardrails (GEMINI.md)",
         "content": content,
     }
 
 
+
+@app.get("/api/skills")
+def get_skills() -> dict[str, Any]:
+    """Return all available specialised harness skills."""
+    skills = load_harness_skills()
+    return {
+        "count": len(skills),
+        "skills": list(skills.keys()),
+    }
+
+
+@app.get("/api/skills/{skill_name}")
+def get_skill(skill_name: str) -> dict[str, Any]:
+    """Return raw markdown content and metadata for a specific specialised skill."""
+    skills = load_harness_skills()
+    if skill_name not in skills:
+        raise HTTPException(status_code=404, detail=f"Skill '{skill_name}' not found.")
+    return {
+        "skill": skill_name,
+        "filename": f"harness/skills/{skill_name}/SKILL.md",
+        "content": skills[skill_name],
+    }
+
+
 @app.get("/api/stream/compare")
+
 async def stream_live_compare():
     """SSE endpoint for live model execution."""
     async def event_generator():

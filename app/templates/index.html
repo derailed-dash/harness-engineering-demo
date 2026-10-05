@@ -71,10 +71,11 @@
                     </span>
                     <button type="button" class="spec-file-badge harness-context-badge" onclick="openHarnessContextModal()" title="Click to view harness engineering context (GEMINI.md)">
                         <i class="fa-solid fa-file-shield"></i>
-                        <span>specs/harness_context.md</span>
+                        <span>harness/harness_context.md</span>
                         <i class="fa-solid fa-arrow-up-right-from-square spec-open-icon"></i>
                     </button>
                 </div>
+
             </div>
             <div class="spec-note">
                 <i class="fa-solid fa-circle-info"></i> Goal spec is <strong>shared</strong>; only the Harnessed track receives <strong>harness guardrails</strong>.
@@ -184,16 +185,17 @@
             </div>
             <div class="skills-bar">
                 <span class="skills-bar-label"><i class="fa-solid fa-puzzle-piece" style="color:var(--accent-cyan);"></i> Active Skills:</span>
-                <span class="skill-tag" id="skill-tag-tdd" title="Test-Driven Development: Mandatory unit tests in tests/test_game.py before implementation">
+                <span class="skill-tag" id="skill-tag-tdd" onclick="openSkillModal('test-driven-development')" title="Test-Driven Development: Mandatory unit tests in tests/test_game.py before implementation" style="cursor:pointer;">
                     <i class="fa-solid fa-flask"></i> test-driven-development
                 </span>
-                <span class="skill-tag" id="skill-tag-api" title="API & Interface Design: Strict Pydantic models & 400 error contracts">
+                <span class="skill-tag" id="skill-tag-api" onclick="openSkillModal('api-and-interface-design')" title="API & Interface Design: Strict Pydantic models & 400 error contracts" style="cursor:pointer;">
                     <i class="fa-solid fa-code"></i> api-and-interface-design
                 </span>
-                <span class="skill-tag" id="skill-tag-gemini" title="Gemini API Dev: google-genai SDK integration & canonical movie grounding">
+                <span class="skill-tag" id="skill-tag-gemini" onclick="openSkillModal('gemini-api-dev')" title="Gemini API Dev: google-genai SDK integration & canonical movie grounding" style="cursor:pointer;">
                     <i class="fa-solid fa-brain"></i> gemini-api-dev
                 </span>
             </div>
+
             <div class="feed" id="harnessed-feed">
                 <div class="feed-card">
                     <div class="feed-time">System Ready</div>
@@ -202,8 +204,9 @@
                         Autonomous ADK loop executing against <code>specs/cosmic_conquest_spec.md</code> with full harness engineering.
                     </p>
                     <p style="color:#64748b; font-size:0.75rem; margin-top:6px;">
-                        <strong>Harness Status:</strong> Context guardrails (<a href="javascript:void(0)" onclick="openHarnessContextModal()" style="color:var(--accent-green); text-decoration:underline;"><code>specs/harness_context.md</code></a>) + Specialised Skills + Turn-by-turn Evaluation Rubric Gate + Living memory feedback.
+                        <strong>Harness Status:</strong> Context guardrails (<a href="javascript:void(0)" onclick="openHarnessContextModal()" style="color:var(--accent-green); text-decoration:underline;"><code>harness/harness_context.md</code></a>) + Specialised Skills + Turn-by-turn Evaluation Rubric Gate + Living memory feedback.
                     </p>
+
                 </div>
             </div>
             <div class="column-footer-group">
@@ -296,9 +299,13 @@
             <div class="modal-body" id="spec-modal-body">
                 <script type="text/plain" id="spec-content-data">{{ spec_content | safe }}</script>
                 <script type="text/plain" id="harness-context-data">{{ harness_context_content | safe }}</script>
+                {% for skill_key, skill_body in harness_skills.items() %}
+                <script type="text/plain" id="skill-content-{{ skill_key }}">{{ skill_body | safe }}</script>
+                {% endfor %}
                 <div id="spec-rendered-view" class="spec-markdown-content"></div>
                 <pre id="spec-raw-view" class="spec-raw-content" style="display:none;"><code id="spec-raw-code"></code></pre>
             </div>
+
             <div class="modal-footer">
                 <div class="modal-footer-note" id="modal-footer-note">
                     <i class="fa-solid fa-circle-info" style="color:var(--accent-cyan);"></i>

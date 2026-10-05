@@ -549,13 +549,36 @@ const DOC_CONFIGS = {
         footerNote: '<i class="fa-solid fa-circle-info" style="color:var(--accent-cyan);"></i> Both the Unharnessed and Harnessed agents receive this exact same specification. The only variable is the Harness.',
     },
     harness_context: {
-        title: 'specs/harness_context.md',
+        title: 'harness/harness_context.md',
         subtitle: 'Harness Engineering Context & Guardrails (Injected only into Harnessed Pipeline)',
         iconClass: 'fa-solid fa-file-shield modal-icon',
         dataId: 'harness-context-data',
         footerNote: '<i class="fa-solid fa-shield-halved" style="color:var(--accent-green);"></i> Persistent workspace instructions (GEMINI.md) defining PEP 585 typing, mandatory TDD, Pydantic contracts, and UI wiring.',
     },
+
+    'test-driven-development': {
+        title: 'harness/skills/test-driven-development/SKILL.md',
+        subtitle: 'Specialised Skill: Test-Driven Development (TDD)',
+        iconClass: 'fa-solid fa-flask modal-icon',
+        dataId: 'skill-content-test-driven-development',
+        footerNote: '<i class="fa-solid fa-flask" style="color:var(--accent-cyan);"></i> Externalised skill instructing the agent to author tests before code in tests/test_game.py.',
+    },
+    'api-and-interface-design': {
+        title: 'harness/skills/api-and-interface-design/SKILL.md',
+        subtitle: 'Specialised Skill: API & Interface Design',
+        iconClass: 'fa-solid fa-code modal-icon',
+        dataId: 'skill-content-api-and-interface-design',
+        footerNote: '<i class="fa-solid fa-code" style="color:var(--accent-cyan);"></i> Externalised skill enforcing Pydantic models, request validation, and HTTP 400 rejection contracts.',
+    },
+    'gemini-api-dev': {
+        title: 'harness/skills/gemini-api-dev/SKILL.md',
+        subtitle: 'Specialised Skill: Gemini API Development',
+        iconClass: 'fa-solid fa-brain modal-icon',
+        dataId: 'skill-content-gemini-api-dev',
+        footerNote: '<i class="fa-solid fa-brain" style="color:var(--accent-cyan);"></i> Externalised skill providing google-genai SDK guidance, structured outputs, and domain grounding.',
+    },
 };
+
 
 function handleSpecModalKeydown(event) {
     if (event.key === 'Escape') {
@@ -632,13 +655,25 @@ function openHarnessContextModal() {
     window.addEventListener('keydown', handleSpecModalKeydown);
 }
 
+function openSkillModal(skillName) {
+    displayDocument(skillName);
+    const modal = document.getElementById('spec-modal');
+    if (!modal) return;
+
+    modal.classList.add('open');
+    window.addEventListener('keydown', handleSpecModalKeydown);
+}
+
 function openDocModal(docType) {
     if (docType === 'harness_context') {
         openHarnessContextModal();
+    } else if (docType in DOC_CONFIGS) {
+        openSkillModal(docType);
     } else {
         openSpecModal();
     }
 }
+
 
 function applySpecViewMode() {
     const renderedView = document.getElementById('spec-rendered-view');
