@@ -179,6 +179,16 @@ header {
 
 .brand-icon {
   font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+}
+
+.brand-icon img {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.35);
+  display: block;
 }
 
 .brand-title h1 {
