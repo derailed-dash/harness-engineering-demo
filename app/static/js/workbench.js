@@ -105,6 +105,8 @@ function clearFeeds() {
 
     const uTokens = document.getElementById('unharnessed-tokens');
     if (uTokens) uTokens.innerText = '0';
+    const uBreakdown = document.getElementById('unharnessed-token-breakdown');
+    if (uBreakdown) uBreakdown.innerText = '(0 in / 0 out)';
     const uCost = document.getElementById('unharnessed-cost');
     if (uCost) uCost.innerText = '$0.0000';
     const uScore = document.getElementById('unharnessed-score');
@@ -114,6 +116,8 @@ function clearFeeds() {
 
     const hTokens = document.getElementById('harnessed-tokens');
     if (hTokens) hTokens.innerText = '0';
+    const hBreakdown = document.getElementById('harnessed-token-breakdown');
+    if (hBreakdown) hBreakdown.innerText = '(0 in / 0 out)';
     const hCost = document.getElementById('harnessed-cost');
     if (hCost) hCost.innerText = '$0.0000';
     const hScore = document.getElementById('harnessed-score');
@@ -349,6 +353,12 @@ function handleStreamEvent(evt) {
             unharnessedCostUsd = evt.metrics.estimated_cost_usd || 0.0;
             const uTokens = document.getElementById('unharnessed-tokens');
             if (uTokens) uTokens.innerText = evt.metrics.total_tokens.toLocaleString();
+            const uBreakdown = document.getElementById('unharnessed-token-breakdown');
+            if (uBreakdown && (evt.metrics.prompt_tokens !== undefined || evt.metrics.candidate_tokens !== undefined)) {
+                const pIn = (evt.metrics.prompt_tokens || 0).toLocaleString();
+                const pOut = (evt.metrics.candidate_tokens || 0).toLocaleString();
+                uBreakdown.innerText = `(${pIn} in / ${pOut} out)`;
+            }
             const uCost = document.getElementById('unharnessed-cost');
             if (uCost) uCost.innerText = evt.metrics.formatted_cost;
             updateCombinedMetrics();
@@ -422,6 +432,12 @@ function handleStreamEvent(evt) {
             harnessedCostUsd = evt.metrics.estimated_cost_usd || 0.0;
             const hTokens = document.getElementById('harnessed-tokens');
             if (hTokens) hTokens.innerText = evt.metrics.total_tokens.toLocaleString();
+            const hBreakdown = document.getElementById('harnessed-token-breakdown');
+            if (hBreakdown && (evt.metrics.prompt_tokens !== undefined || evt.metrics.candidate_tokens !== undefined)) {
+                const pIn = (evt.metrics.prompt_tokens || 0).toLocaleString();
+                const pOut = (evt.metrics.candidate_tokens || 0).toLocaleString();
+                hBreakdown.innerText = `(${pIn} in / ${pOut} out)`;
+            }
             const hCost = document.getElementById('harnessed-cost');
             if (hCost) hCost.innerText = evt.metrics.formatted_cost;
             updateCombinedMetrics();

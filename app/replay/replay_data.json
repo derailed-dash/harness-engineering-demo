@@ -8,7 +8,7 @@
     {
       "type": "unharnessed_start",
       "message": "Launching Unharnessed Single Pass (Vibe Coding)...",
-      "delay_ms": 350
+      "delay_ms": 722
     },
     {
       "type": "unharnessed_event",
@@ -64,7 +64,7 @@
         "formatted_cost": "$0.0000",
         "turn_count": 0
       },
-      "delay_ms": 93
+      "delay_ms": 80
     },
     {
       "type": "harnessed_event",
@@ -120,7 +120,7 @@
         "formatted_cost": "$0.0000",
         "turn_count": 0
       },
-      "delay_ms": 81
+      "delay_ms": 80
     },
     {
       "type": "harnessed_event",
@@ -137,7 +137,7 @@
         "formatted_cost": "$0.0026",
         "turn_count": 1
       },
-      "delay_ms": 81
+      "delay_ms": 80
     },
     {
       "type": "harnessed_event",
@@ -175,7 +175,7 @@
         "formatted_cost": "$0.0026",
         "turn_count": 1
       },
-      "delay_ms": 80
+      "delay_ms": 81
     },
     {
       "type": "harnessed_event",
@@ -267,42 +267,42 @@
               "name": "Target State Completion (Goal Fidelity)",
               "score": 1.0,
               "passed": true,
-              "details": "The star map adjacency graph, turn resolution, victory/defeat conditions, and canonical sci-fi movie trivia (Blade Runner, Alien, Dune, The Matrix, Solaris) are all implemented."
+              "details": "The implementation correctly establishes a star map adjacency graph, combat and turn mechanics with victory/defeat conditions, and trivia strictly grounded in canonical sci-fi films (Alien, Blade Runner, Dune, Solaris, The Matrix, and 2001: A Space Odyssey)."
             },
             {
               "id": "2.2",
               "name": "Scope Discipline (Anti-Hallucination)",
               "score": 1.0,
               "passed": true,
-              "details": "The implementation is concise, uses standard FastAPI/Pydantic dependencies without hallucinating libraries, and avoids speculative bloat."
+              "details": "The codebase is concise and focused, utilizing standard FastAPI, Pydantic, and Pytest without speculative helper bloat or hallucinated dependencies."
             },
             {
               "id": "2.3",
               "name": "Architectural Integrity",
               "score": 1.0,
               "passed": true,
-              "details": "There is a clean separation of concerns among the game engine domain logic, trivia service, FastAPI routing, and static UI."
+              "details": "Clean separation of concerns is maintained between domain game engine logic, trivia data service, HTTP route handling, and static frontend assets."
             },
             {
               "id": "2.4",
               "name": "Error & Remediation Clarity",
               "score": 1.0,
               "passed": true,
-              "details": "The attack endpoint explicitly raises HTTP 400 with actionable remediation listing valid adjacent targets when an illegal move is attempted."
+              "details": "The /api/game/attack endpoint cleanly validates adjacency and returns an actionable HTTP 400 error explicitly detailing the invalid target and listing permissible target sectors."
             },
             {
               "id": "2.5",
               "name": "Design Rationale & Intent",
               "score": 1.0,
               "passed": true,
-              "details": "Module docstrings clearly articulate architectural intent and design rationale rather than just restating function names."
+              "details": "The module docstrings explicitly articulate the architectural intent and design rationale for each module rather than merely summarizing functions."
             },
             {
               "id": "2.6",
               "name": "Progression Ergonomics & Interactivity",
               "score": 0.0,
               "passed": false,
-              "details": "The frontend contains only static HTML markup without JavaScript, buttons, or clickable progression affordances to interact with the API or initiate attacks."
+              "details": "The frontend HTML contains static placeholder text with no JavaScript wiring, no event listeners, and no clickable progression affordances to trigger attacks or answer challenges."
             }
           ],
           "failed_checks": [
@@ -318,19 +318,19 @@
               "name": "Progression Ergonomics & Interactivity",
               "score": 0.0,
               "passed": false,
-              "details": "The frontend contains only static HTML markup without JavaScript, buttons, or clickable progression affordances to interact with the API or initiate attacks."
+              "details": "The frontend HTML contains static placeholder text with no JavaScript wiring, no event listeners, and no clickable progression affordances to trigger attacks or answer challenges."
             }
           ],
-          "diagnostics": "- Check 1.7 (Frontend Interactive API Wiring) FAILED: Non-interactive UI: missing API endpoints in client script: /api/game/attack (sector attack trigger), /api/game/answer (combat answer submission).\n- Check 2.6 (Progression Ergonomics & Interactivity) FAILED: The frontend contains only static HTML markup without JavaScript, buttons, or clickable progression affordances to interact with the API or initiate attacks."
+          "diagnostics": "- Check 1.7 (Frontend Interactive API Wiring) FAILED: Non-interactive UI: missing API endpoints in client script: /api/game/attack (sector attack trigger), /api/game/answer (combat answer submission).\n- Check 2.6 (Progression Ergonomics & Interactivity) FAILED: The frontend HTML contains static placeholder text with no JavaScript wiring, no event listeners, and no clickable progression affordances to trigger attacks or answer challenges."
         },
         "message": "Iteration 1 Score: 12.0/14.0. Living memory recording feedback."
       },
       "metrics": {
         "prompt_tokens": 5987,
-        "candidate_tokens": 4181,
-        "total_tokens": 10168,
-        "estimated_cost_usd": 0.003407,
-        "formatted_cost": "$0.0034",
+        "candidate_tokens": 4300,
+        "total_tokens": 10287,
+        "estimated_cost_usd": 0.003478,
+        "formatted_cost": "$0.0035",
         "turn_count": 2
       },
       "delay_ms": 1200
@@ -341,14 +341,14 @@
         "stage": "living_memory",
         "iteration": 1,
         "message": "Living Memory Diagnostics: Persisted to harness/output/LIVING_MEMORY.md. Reinjecting failure points to guide autonomous remediation in Iteration 2.",
-        "diagnostics": "- Check 1.7 (Frontend Interactive API Wiring) FAILED: Non-interactive UI: missing API endpoints in client script: /api/game/attack (sector attack trigger), /api/game/answer (combat answer submission).\n- Check 2.6 (Progression Ergonomics & Interactivity) FAILED: The frontend contains only static HTML markup without JavaScript, buttons, or clickable progression affordances to interact with the API or initiate attacks."
+        "diagnostics": "- Check 1.7 (Frontend Interactive API Wiring) FAILED: Non-interactive UI: missing API endpoints in client script: /api/game/attack (sector attack trigger), /api/game/answer (combat answer submission).\n- Check 2.6 (Progression Ergonomics & Interactivity) FAILED: The frontend HTML contains static placeholder text with no JavaScript wiring, no event listeners, and no clickable progression affordances to trigger attacks or answer challenges."
       },
       "metrics": {
         "prompt_tokens": 5987,
-        "candidate_tokens": 4181,
-        "total_tokens": 10168,
-        "estimated_cost_usd": 0.003407,
-        "formatted_cost": "$0.0034",
+        "candidate_tokens": 4300,
+        "total_tokens": 10287,
+        "estimated_cost_usd": 0.003478,
+        "formatted_cost": "$0.0035",
         "turn_count": 2
       },
       "delay_ms": 81
@@ -363,10 +363,10 @@
       },
       "metrics": {
         "prompt_tokens": 5987,
-        "candidate_tokens": 4181,
-        "total_tokens": 10168,
-        "estimated_cost_usd": 0.003407,
-        "formatted_cost": "$0.0034",
+        "candidate_tokens": 4300,
+        "total_tokens": 10287,
+        "estimated_cost_usd": 0.003478,
+        "formatted_cost": "$0.0035",
         "turn_count": 2
       },
       "delay_ms": 80
@@ -380,13 +380,13 @@
       },
       "metrics": {
         "prompt_tokens": 7187,
-        "candidate_tokens": 6081,
-        "total_tokens": 13268,
-        "estimated_cost_usd": 0.004727,
-        "formatted_cost": "$0.0047",
+        "candidate_tokens": 6200,
+        "total_tokens": 13387,
+        "estimated_cost_usd": 0.004798,
+        "formatted_cost": "$0.0048",
         "turn_count": 3
       },
-      "delay_ms": 103
+      "delay_ms": 100
     },
     {
       "type": "harnessed_event",
@@ -461,42 +461,42 @@
               "name": "Target State Completion (Goal Fidelity)",
               "score": 1.0,
               "passed": true,
-              "details": "The implementation includes a fully connected star map adjacency graph, turn and combat resolution, explicit victory/defeat conditions, and trivia strictly grounded in canonical sci-fi films (Alien, Blade Runner, Dune, Solaris, The Matrix, 2001)."
+              "details": "Implements the star map adjacency graph, turn mechanics with victory/defeat conditions, and strictly grounds trivia in canonical sci-fi films (Alien, Blade Runner, Dune, Solaris, The Matrix, 2001)."
             },
             {
               "id": "2.2",
               "name": "Scope Discipline (Anti-Hallucination)",
               "score": 1.0,
               "passed": true,
-              "details": "The codebase is tightly scoped with no speculative helper files, unnecessary external dependencies, or bloat."
+              "details": "The implementation is concise and focused, relying only on standard FastAPI, Pydantic, and Pytest without speculative dependencies or bloat."
             },
             {
               "id": "2.3",
               "name": "Architectural Integrity",
               "score": 1.0,
               "passed": true,
-              "details": "Clean boundaries are maintained: game mechanics are encapsulated in game_engine.py, trivia in trivia_service.py, API routing in main.py, and UI in index.html."
+              "details": "Maintains strict boundaries separating pure domain logic (game_engine), external content/trivia (trivia_service), API routing (main.py), and UI presentation (static/index.html)."
             },
             {
               "id": "2.4",
               "name": "Error & Remediation Clarity",
               "score": 1.0,
               "passed": true,
-              "details": "The /api/game/attack endpoint validates adjacency and raises an HTTP 400 HTTPException with actionable details listing currently valid target sectors without leaking internal stack traces."
+              "details": "The /api/game/attack endpoint cleanly raises an HTTP 400 with an actionable error message listing valid targets when an invalid or non-adjacent move is attempted."
             },
             {
               "id": "2.5",
               "name": "Design Rationale & Intent",
               "score": 1.0,
               "passed": true,
-              "details": "Module docstrings in trivia_service.py, game_engine.py, and main.py explicitly articulate the architectural intent and 'why' behind design decisions."
+              "details": "Module docstrings articulate the architectural rationale and design intent across all components rather than merely restating signatures."
             },
             {
               "id": "2.6",
               "name": "Progression Ergonomics & Interactivity",
               "score": 1.0,
               "passed": true,
-              "details": "The UI displays dedicated sector cards in a star map grid with visible affordances; clicking any adjacent target card directly initiates the combat challenge without intermediate side-panel selection steps."
+              "details": "The UI provides clearly styled, directly clickable sector cards where clicking an attack target card immediately initiates combat without multi-step panel indirection."
             }
           ],
           "failed_checks": [],
@@ -506,9 +506,9 @@
       },
       "metrics": {
         "prompt_tokens": 17578,
-        "candidate_tokens": 6599,
-        "total_tokens": 24177,
-        "estimated_cost_usd": 0.006596,
+        "candidate_tokens": 6622,
+        "total_tokens": 24200,
+        "estimated_cost_usd": 0.00661,
         "formatted_cost": "$0.0066",
         "turn_count": 4
       },
@@ -588,42 +588,42 @@
               "name": "Target State Completion (Goal Fidelity)",
               "score": 1.0,
               "passed": true,
-              "details": "The implementation includes a fully connected star map adjacency graph, turn and combat resolution, explicit victory/defeat conditions, and trivia strictly grounded in canonical sci-fi films (Alien, Blade Runner, Dune, Solaris, The Matrix, 2001)."
+              "details": "Implements the star map adjacency graph, turn mechanics with victory/defeat conditions, and strictly grounds trivia in canonical sci-fi films (Alien, Blade Runner, Dune, Solaris, The Matrix, 2001)."
             },
             {
               "id": "2.2",
               "name": "Scope Discipline (Anti-Hallucination)",
               "score": 1.0,
               "passed": true,
-              "details": "The codebase is tightly scoped with no speculative helper files, unnecessary external dependencies, or bloat."
+              "details": "The implementation is concise and focused, relying only on standard FastAPI, Pydantic, and Pytest without speculative dependencies or bloat."
             },
             {
               "id": "2.3",
               "name": "Architectural Integrity",
               "score": 1.0,
               "passed": true,
-              "details": "Clean boundaries are maintained: game mechanics are encapsulated in game_engine.py, trivia in trivia_service.py, API routing in main.py, and UI in index.html."
+              "details": "Maintains strict boundaries separating pure domain logic (game_engine), external content/trivia (trivia_service), API routing (main.py), and UI presentation (static/index.html)."
             },
             {
               "id": "2.4",
               "name": "Error & Remediation Clarity",
               "score": 1.0,
               "passed": true,
-              "details": "The /api/game/attack endpoint validates adjacency and raises an HTTP 400 HTTPException with actionable details listing currently valid target sectors without leaking internal stack traces."
+              "details": "The /api/game/attack endpoint cleanly raises an HTTP 400 with an actionable error message listing valid targets when an invalid or non-adjacent move is attempted."
             },
             {
               "id": "2.5",
               "name": "Design Rationale & Intent",
               "score": 1.0,
               "passed": true,
-              "details": "Module docstrings in trivia_service.py, game_engine.py, and main.py explicitly articulate the architectural intent and 'why' behind design decisions."
+              "details": "Module docstrings articulate the architectural rationale and design intent across all components rather than merely restating signatures."
             },
             {
               "id": "2.6",
               "name": "Progression Ergonomics & Interactivity",
               "score": 1.0,
               "passed": true,
-              "details": "The UI displays dedicated sector cards in a star map grid with visible affordances; clicking any adjacent target card directly initiates the combat challenge without intermediate side-panel selection steps."
+              "details": "The UI provides clearly styled, directly clickable sector cards where clicking an attack target card immediately initiates combat without multi-step panel indirection."
             }
           ],
           "failed_checks": [],
@@ -631,20 +631,20 @@
         },
         "token_metrics": {
           "prompt_tokens": 17578,
-          "candidate_tokens": 6599,
-          "total_tokens": 24177,
-          "estimated_cost_usd": 0.006596,
+          "candidate_tokens": 6622,
+          "total_tokens": 24200,
+          "estimated_cost_usd": 0.00661,
           "formatted_cost": "$0.0066",
           "turn_count": 4
         },
-        "duration_seconds": 21.9,
-        "formatted_duration": "0:21"
+        "duration_seconds": 22.5,
+        "formatted_duration": "0:22"
       },
       "metrics": {
         "prompt_tokens": 17578,
-        "candidate_tokens": 6599,
-        "total_tokens": 24177,
-        "estimated_cost_usd": 0.006596,
+        "candidate_tokens": 6622,
+        "total_tokens": 24200,
+        "estimated_cost_usd": 0.00661,
         "formatted_cost": "$0.0066",
         "turn_count": 4
       },
@@ -655,14 +655,14 @@
       "data": {
         "stage": "raw_response",
         "message": "Raw model response received from specification prompt.",
-        "response_text": "### 1. `game_engine.py`\n\n```python\n\"\"\"\nCore domain logic, topology graph, and state machine for Cosmic Trivia & Strategy Conquest.\n\"\"\"\n\nfrom typing import Dict, List, Set, Optional\nfrom pydantic import BaseModel, Field\n\n\n# Sector metadata & display attributes\nSECTOR_METADATA: Dict[str, Dict[str, str]] = {\n    \"earth\": {\n        \"name\": \"Earth (Sol III)\",\n        \"theme\": \"Sol Fleet Command & Capital\",\n        \"description\": \"Cradle of humanity and orbital command center of the Sol Fleet.\",\n        \"icon\": \"\ud83c\udf0d\",\n        \"x\": 160,\n        \"y\": 280,\n    },\n    \"lv426\": {\n        \"name\": \"Acheron (LV-426)\",\n        \"theme\": \"Hostile Xenomorph Outpost\",\n        \"description\": \"Storm-ravaged moon holding a derelict biomechanical research site.\",\n        \"icon\": \"\u2623\ufe0f\",\n        \"x\": 360,\n        \"y\": 140,\n    },\n    \"zion\": {\n        \"name\": \"Zion Sub-Core\",\n        \"theme\": \"Underground Machine Frontier\",\n        \"description\": \"Geothermal subterranean redoubt defended against synthetic swarms.\",\n        \"icon\": \"\u26a1\",\n        \"x\": 360,\n        \"y\": 420,\n    },\n    \"tannhauser\": {\n        \"name\": \"Tannh\u00e4user Gate\",\n        \"theme\": \"Outer Rim Cyber Gate\",\n        \"description\": \"High-orbit wa..."
+        "response_text": "Here is the complete, production-ready implementation of **Cosmic Trivia & Strategy Conquest**.\n\n---\n\n### `game_engine.py`\n\n```python\n\"\"\"\ngame_engine.py - Core domain logic, star map topology graph, and state machine.\n\"\"\"\n\nfrom typing import Dict, List, Set, Optional\nfrom pydantic import BaseModel, Field\n\n\nclass SectorMetadata(BaseModel):\n    id: str\n    name: str\n    lore: str\n    movie_theme: str\n    coordinates: Dict[str, float]  # SVG percentage coordinates (x, y)\n\n\nSECTORS_METADATA: Dict[str, SectorMetadata] = {\n    \"earth\": SectorMetadata(\n        id=\"earth\",\n        name=\"Sector Sol-1 (Earth)\",\n        lore=\"Birthplace of humanity and home base of the Sol Defense Fleet.\",\n        movie_theme=\"General Sci-Fi Command\",\n        coordinates={\"x\": 18.0, \"y\": 50.0},\n    ),\n    \"lv426\": SectorMetadata(\n        id=\"lv426\",\n        name=\"LV-426 Acheron\",\n        lore=\"Stormy moon bearing a derelict extraterrestrial vessel and biomechanical horrors.\",\n        movie_theme=\"Alien franchise\",\n        coordinates={\"x\": 38.0, \"y\": 25.0},\n    ),\n    \"zion\": SectorMetadata(\n        id=\"zion\",\n        name=\"Zion Core\",\n        lore=\"Deep geothermal subterranean redoubt fighting against the ma..."
       },
       "metrics": {
         "prompt_tokens": 1250,
-        "candidate_tokens": 19516,
-        "total_tokens": 20766,
-        "estimated_cost_usd": 0.011897,
-        "formatted_cost": "$0.0119",
+        "candidate_tokens": 16181,
+        "total_tokens": 17431,
+        "estimated_cost_usd": 0.009896,
+        "formatted_cost": "$0.0099",
         "turn_count": 1
       },
       "delay_ms": 1200
@@ -681,13 +681,13 @@
       },
       "metrics": {
         "prompt_tokens": 1250,
-        "candidate_tokens": 19516,
-        "total_tokens": 20766,
-        "estimated_cost_usd": 0.011897,
-        "formatted_cost": "$0.0119",
+        "candidate_tokens": 16181,
+        "total_tokens": 17431,
+        "estimated_cost_usd": 0.009896,
+        "formatted_cost": "$0.0099",
         "turn_count": 1
       },
-      "delay_ms": 82
+      "delay_ms": 87
     },
     {
       "type": "unharnessed_event",
@@ -697,21 +697,21 @@
       },
       "metrics": {
         "prompt_tokens": 1250,
-        "candidate_tokens": 19516,
-        "total_tokens": 20766,
-        "estimated_cost_usd": 0.011897,
-        "formatted_cost": "$0.0119",
+        "candidate_tokens": 16181,
+        "total_tokens": 17431,
+        "estimated_cost_usd": 0.009896,
+        "formatted_cost": "$0.0099",
         "turn_count": 1
       },
-      "delay_ms": 81
+      "delay_ms": 80
     },
     {
       "type": "unharnessed_event",
       "data": {
         "stage": "completed",
-        "message": "Evaluation complete. Final Score: 7.0/14.0",
+        "message": "Evaluation complete. Final Score: 6.0/14.0",
         "scorecard": {
-          "score": 7.0,
+          "score": 6.0,
           "max_score": 14.0,
           "is_passing": false,
           "tier_1_mechanical": [
@@ -778,42 +778,42 @@
               "name": "Target State Completion (Goal Fidelity)",
               "score": 0.0,
               "passed": false,
-              "details": "The codebase fails to implement an actual adjacency graph (relying on a flat list check), and trivia questions include generic space lore rather than being strictly grounded in canonical Sci-Fi movies."
+              "details": "The implementation lacks a star map adjacency graph (can_attack_sector simply checks list inclusion) and trivia includes generic tropes ('Generic Space Lore') rather than strictly canonical Sci-Fi movies."
             },
             {
               "id": "2.2",
               "name": "Scope Discipline (Anti-Hallucination)",
               "score": 1.0,
               "passed": true,
-              "details": "The implementation adheres to standard dependencies and maintains a compact file structure without unrequested speculative helper files or bloat."
+              "details": "The codebase avoids hallucinated dependencies, unrequested speculative helper files, or excessive bloat."
             },
             {
               "id": "2.3",
               "name": "Architectural Integrity",
-              "score": 1.0,
-              "passed": true,
-              "details": "The project maintains clean separation of concerns across trivia management, game engine logic, and FastAPI routing."
+              "score": 0.0,
+              "passed": false,
+              "details": "Boundaries are breached: main.py embeds raw HTML UI presentation directly inside an API route handler, and answer verification domain logic is executed inside the route handler instead of within the engine/trivia service."
             },
             {
               "id": "2.4",
               "name": "Error & Remediation Clarity",
               "score": 0.0,
               "passed": false,
-              "details": "The API does not validate moves against game rules and does not return HTTP 400 responses for non-adjacent sector attacks or invalid actions."
+              "details": "The API does not validate moves against adjacency or state, failing to provide actionable HTTP 400 responses for invalid moves."
             },
             {
               "id": "2.5",
               "name": "Design Rationale & Intent",
               "score": 0.0,
               "passed": false,
-              "details": "Module docstrings are missing or trivial, failing to articulate architectural rationale, design trade-offs, and structural intent."
+              "details": "Module docstrings explaining architectural intent and design rationale are entirely missing across all modules."
             },
             {
               "id": "2.6",
               "name": "Progression Ergonomics & Interactivity",
               "score": 0.0,
               "passed": false,
-              "details": "The frontend contains only static placeholder text and lacks visible, clickable sector cards or tiles with direct single-action attack affordances."
+              "details": "The frontend completely lacks sector cards, tiles, single-action attack affordances, and interactive client-side JavaScript."
             }
           ],
           "failed_checks": [
@@ -843,49 +843,56 @@
               "name": "Target State Completion (Goal Fidelity)",
               "score": 0.0,
               "passed": false,
-              "details": "The codebase fails to implement an actual adjacency graph (relying on a flat list check), and trivia questions include generic space lore rather than being strictly grounded in canonical Sci-Fi movies."
+              "details": "The implementation lacks a star map adjacency graph (can_attack_sector simply checks list inclusion) and trivia includes generic tropes ('Generic Space Lore') rather than strictly canonical Sci-Fi movies."
+            },
+            {
+              "id": "2.3",
+              "name": "Architectural Integrity",
+              "score": 0.0,
+              "passed": false,
+              "details": "Boundaries are breached: main.py embeds raw HTML UI presentation directly inside an API route handler, and answer verification domain logic is executed inside the route handler instead of within the engine/trivia service."
             },
             {
               "id": "2.4",
               "name": "Error & Remediation Clarity",
               "score": 0.0,
               "passed": false,
-              "details": "The API does not validate moves against game rules and does not return HTTP 400 responses for non-adjacent sector attacks or invalid actions."
+              "details": "The API does not validate moves against adjacency or state, failing to provide actionable HTTP 400 responses for invalid moves."
             },
             {
               "id": "2.5",
               "name": "Design Rationale & Intent",
               "score": 0.0,
               "passed": false,
-              "details": "Module docstrings are missing or trivial, failing to articulate architectural rationale, design trade-offs, and structural intent."
+              "details": "Module docstrings explaining architectural intent and design rationale are entirely missing across all modules."
             },
             {
               "id": "2.6",
               "name": "Progression Ergonomics & Interactivity",
               "score": 0.0,
               "passed": false,
-              "details": "The frontend contains only static placeholder text and lacks visible, clickable sector cards or tiles with direct single-action attack affordances."
+              "details": "The frontend completely lacks sector cards, tiles, single-action attack affordances, and interactive client-side JavaScript."
             }
           ],
-          "diagnostics": "- Check 1.1 (Unit Tests Passage) FAILED: No unit tests found in workspace (TDD requirement omitted).\n- Check 1.3 (PEP 585 Type Hints) FAILED: Deprecated types detected: trivia_service.py: from typing import Dict, trivia_service.py: from typing import List, game_engine.py: from typing import List\n- Check 1.7 (Frontend Interactive API Wiring) FAILED: Non-interactive UI: missing API endpoints in client script: /api/game/attack (sector attack trigger), /api/game/answer (combat answer submission).\n- Check 2.1 (Target State Completion (Goal Fidelity)) FAILED: The codebase fails to implement an actual adjacency graph (relying on a flat list check), and trivia questions include generic space lore rather than being strictly grounded in canonical Sci-Fi movies.\n- Check 2.4 (Error & Remediation Clarity) FAILED: The API does not validate moves against game rules and does not return HTTP 400 responses for non-adjacent sector attacks or invalid actions.\n- Check 2.5 (Design Rationale & Intent) FAILED: Module docstrings are missing or trivial, failing to articulate architectural rationale, design trade-offs, and structural intent.\n- Check 2.6 (Progression Ergonomics & Interactivity) FAILED: The frontend contains only static placeholder text and lacks visible, clickable sector cards or tiles with direct single-action attack affordances."
+          "diagnostics": "- Check 1.1 (Unit Tests Passage) FAILED: No unit tests found in workspace (TDD requirement omitted).\n- Check 1.3 (PEP 585 Type Hints) FAILED: Deprecated types detected: trivia_service.py: from typing import Dict, trivia_service.py: from typing import List, game_engine.py: from typing import List\n- Check 1.7 (Frontend Interactive API Wiring) FAILED: Non-interactive UI: missing API endpoints in client script: /api/game/attack (sector attack trigger), /api/game/answer (combat answer submission).\n- Check 2.1 (Target State Completion (Goal Fidelity)) FAILED: The implementation lacks a star map adjacency graph (can_attack_sector simply checks list inclusion) and trivia includes generic tropes ('Generic Space Lore') rather than strictly canonical Sci-Fi movies.\n- Check 2.3 (Architectural Integrity) FAILED: Boundaries are breached: main.py embeds raw HTML UI presentation directly inside an API route handler, and answer verification domain logic is executed inside the route handler instead of within the engine/trivia service.\n- Check 2.4 (Error & Remediation Clarity) FAILED: The API does not validate moves against adjacency or state, failing to provide actionable HTTP 400 responses for invalid moves.\n- Check 2.5 (Design Rationale & Intent) FAILED: Module docstrings explaining architectural intent and design rationale are entirely missing across all modules.\n- Check 2.6 (Progression Ergonomics & Interactivity) FAILED: The frontend completely lacks sector cards, tiles, single-action attack affordances, and interactive client-side JavaScript."
         },
         "token_metrics": {
           "prompt_tokens": 3200,
-          "candidate_tokens": 19898,
-          "total_tokens": 23098,
-          "estimated_cost_usd": 0.012419,
-          "formatted_cost": "$0.0124",
+          "candidate_tokens": 16651,
+          "total_tokens": 19851,
+          "estimated_cost_usd": 0.010471,
+          "formatted_cost": "$0.0105",
           "turn_count": 2
         },
-        "duration_seconds": 129.4,
-        "formatted_duration": "2:09"
+        "duration_seconds": 110.8,
+        "formatted_duration": "1:50"
       },
       "metrics": {
         "prompt_tokens": 3200,
-        "candidate_tokens": 19898,
-        "total_tokens": 23098,
-        "estimated_cost_usd": 0.012419,
-        "formatted_cost": "$0.0124",
+        "candidate_tokens": 16651,
+        "total_tokens": 19851,
+        "estimated_cost_usd": 0.010471,
+        "formatted_cost": "$0.0105",
         "turn_count": 2
       },
       "delay_ms": 1200
@@ -895,25 +902,25 @@
       "unharnessed": {
         "tokens": {
           "prompt_tokens": 3200,
-          "candidate_tokens": 19898,
-          "total_tokens": 23098,
-          "estimated_cost_usd": 0.012419,
-          "formatted_cost": "$0.0124",
+          "candidate_tokens": 16651,
+          "total_tokens": 19851,
+          "estimated_cost_usd": 0.010471,
+          "formatted_cost": "$0.0105",
           "turn_count": 2
         }
       },
       "harnessed": {
         "tokens": {
           "prompt_tokens": 17578,
-          "candidate_tokens": 6599,
-          "total_tokens": 24177,
-          "estimated_cost_usd": 0.006596,
+          "candidate_tokens": 6622,
+          "total_tokens": 24200,
+          "estimated_cost_usd": 0.00661,
           "formatted_cost": "$0.0066",
           "turn_count": 4
         }
       },
-      "total_duration_seconds": 129.5,
-      "total_formatted_duration": "2:09",
+      "total_duration_seconds": 110.9,
+      "total_formatted_duration": "1:50",
       "message": "Parallel comparison complete. Vibe coding finished with flaws; Harness self-healed to verified quality (100% Pass Rate).",
       "delay_ms": 500
     }
