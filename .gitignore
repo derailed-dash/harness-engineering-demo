@@ -12,3 +12,6 @@ workspaces/*/*
 # Autonomous loop persisted diagnostic memory ledger
 harness/output/
 
+# IDE configuration
+.vscode/
+
