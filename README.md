@@ -27,6 +27,10 @@ This demo runs two agentic "builder" paradigms head-to-head. Both tracks attempt
    - Gates every loop iteration through a multi-point evaluation rubric that includes both deterministic and semantic tests.
    - Feeds failures back into living memory for self-healing.
 
+You can watch a full live demonstration of the solution here:
+
+[![Harness Engineering Workbench — Compare Building a Solution With and Without a Harness](media/harness-workbench-video.jpg)](https://www.youtube.com/watch?v=7pKl2SvmPuU "Harness Engineering Workbench — Compare Building a Solution With and Without a Harness")
+
 ### Decoupling Engineering Discipline from the Application Spec
 
 A key insight simulated in this workbench is the clean architectural separation between **Task Goal Specifications** and **Reusable Engineering Guardrails**:
