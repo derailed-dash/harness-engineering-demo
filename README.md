@@ -96,16 +96,20 @@ harness-engineering-demo/
 ├── specs/                      # Task specifications
 │   └── cosmic_conquest_spec.md # Shared application specification (what to build)
 ├── golden_tests/               # Independent 31-test acceptance suite validating candidate workspaces
-├── snapshots/                  # Pre-recorded candidate workspaces for zero-latency presentation replay
+├── snapshots/                  # Layer 1: Version-controlled reference snapshots backing presentation replay
 │   ├── unharnessed/            # Reference unharnessed prototype snapshot (~9.0 / 14.0)
 │   └── harnessed/              # Reference verified harnessed candidate snapshot (14.0 / 14.0)
-├── workspaces/                 # Layer 2: Ephemeral generation scratchpads for unharnessed and harnessed agents
+├── workspaces/                 # Layer 2: Ephemeral runtime generation scratchpads (git-ignored)
 │   ├── unharnessed/            # Scratchpad for open-loop unharnessed code generation
 │   └── harnessed/              # Scratchpad for iterative ADK self-healing code generation
 ├── Makefile                    # Developer workflow automation targets (lint, test, verify, deploy)
 ├── pyproject.toml              # Python 3.13 project specification and dependencies
 └── Dockerfile                  # Container definition for Google Cloud Run deployment
 ```
+
+> **Note on `snapshots/` vs. `workspaces/`**:
+> * `snapshots/` is committed to git as a deterministic offline reference store. When **Presentation Replay** is triggered, `app/replay/player.py` automatically restores these snapshots into `workspaces/` so the interactive preview tabs and rubric scores are available instantly without calling live model APIs.
+> * `workspaces/` is ephemeral runtime output created dynamically during live runs (or populated from `snapshots/` during replay) and its generated contents are intentionally excluded from git tracking.
 
 ---
 
@@ -234,7 +238,7 @@ When running on Google Cloud Run, the workbench automatically authenticates usin
 
 ## Two Execution Modes
 
-1. **Presentation Replay (Instant)**: Click **"Presentation Replay"** in the top navigation bar. Instantly streams pre-recorded comparison traces and sets up both preview games for zero-latency conference presentations.
+1. **Presentation Replay (Instant)**: Click **"Presentation Replay"** in the top navigation bar. Instantly streams pre-recorded comparison traces and copies pre-built candidates from `snapshots/` into `workspaces/` so both interactive game previews run immediately with zero network latency.
 2. **Run Comparison (Live)**: Click **"Run Comparison"** to invoke `gemini-3.8-flash` in real-time concurrently across both candidate pipelines.
 
 ---
