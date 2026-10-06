@@ -55,7 +55,7 @@ To avoid confusion when reading this codebase, always distinguish between **Laye
 | `app/token_tracker.py` | **Layer 1** | Accumulates prompt and candidate tokens; estimates costs in US Dollars ($). |
 | `snapshots/` | **Layer 1** | Pre-recorded candidate workspaces (`snapshots/unharnessed/` and `snapshots/harnessed/`) providing instant, zero-latency candidate application states for presentation replay mode. |
 | `specs/cosmic_conquest_spec.md` | **Layer 1** | The canonical goal specification prompt provided to both agents. |
-| `specs/harness_context.md` | **Layer 1** | Reusable engineering context and guardrails (`GEMINI.md` rules) injected exclusively into the Harnessed track. |
+| `harness/harness_context.md` | **Layer 1** | Reusable engineering context and guardrails (`GEMINI.md` rules) injected exclusively into the Harnessed track. |
 | `golden_tests/` | **Layer 1** | Independent acceptance test suite used to evaluate both candidate workspaces objectively. |
 | `scripts/deploy.sh` | **Layer 1** | Deployment automation script for Google Cloud Run with dynamic root path resolution. |
 | `media/` | **Layer 1** | Visual presentation assets and empirical benchmark run screenshots. |
@@ -71,7 +71,7 @@ A crucial architectural principle demonstrated by this workbench is the clean de
 
 * **Application Goal Specification (`specs/cosmic_conquest_spec.md`)**:
   Represents an ephemeral, task-specific feature requirement (the tactical space game rules, planet adjacency graph, and REST endpoints). Both the unharnessed and harnessed pipelines receive this exact same specification.
-* **Harness Context & Guardrails (`specs/harness_context.md`)**:
+* **Harness Context & Guardrails (`harness/harness_context.md`)**:
   Represents standing, reusable organisation- or team-level engineering policies (`GEMINI.md`, `AGENTS.md`, and Agent Skills). It mandates non-negotiable architectural invariants: Python 3.13, PEP 585 typing, mandatory TDD unit test suites, Pydantic input parameterisation, and module docstring intent.
 
 In production enterprise software engineering, you never pollute individual feature tickets or user stories with repetitive coding hygiene boilerplate. Engineering guardrails are maintained centrally at the organisation or team level and automatically inherited by the harness across all projects and tasks.

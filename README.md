@@ -1,6 +1,6 @@
-# Harness Engineering Workbench: Vibe Coding vs. Autonomous ADK Loops
+# Harness Engineering Workbench: Side-by-Side Demo of Vibing vs Harness with Loop
 
-An interactive demonstration application accompanying the trilogy series **"Beyond Vibe Coding: The Engineering Blueprint for Reliable AI Agents"**.
+An interactive demonstration application accompanying the trilogy series **["Beyond Vibe Coding: The Engineering Blueprint for Reliable AI Agents"](https://medium.com/google-cloud/from-vibing-chaos-to-reliable-agents-the-what-why-and-how-of-harness-engineering-6e7e0443a4fc)**.
 
 This workbench visually and empirically proves the core maxim:
 $$\text{Agent} = \text{Model} + \text{Harness}$$
@@ -9,35 +9,31 @@ $$\text{Agent} = \text{Model} + \text{Harness}$$
 
 ---
 
-## What This Demo Demonstrates
+## What This Application Demonstrates
 
-The application runs two agent paradigms head-to-head on the exact same software challenge: building a full-stack tactical galaxy conquest game, **"Cosmic Trivia & Strategy Conquest"**, where sector captures are resolved using trivia challenges based exclusively on **real Sci-Fi movies** (e.g. *Blade Runner*, *2001: A Space Odyssey*, *Alien*, *The Matrix*, *Dune*, *Solaris*).
+This demo runs two agentic "builder" paradigms head-to-head. Both tracks attempt to build the exact same software solution from scratch: creating a full-stack galaxy conquest game, **"Cosmic Trivia & Strategy Conquest"**, where sector captures are resolved using trivia challenges based exclusively on Sci-Fi movies.
 
 1. **The Unharnessed Approach ("Single Turn / No Harness")**:
-   - Sent the raw goal prompt with zero contextual engineering rules (`GEMINI.md`).
-   - Prompted in a single open-loop turn with zero specialised skills and no test runner feedback.
+   - Sent the raw goal / spec prompt with no additional harness context.
+   - No loop.
+   - No skills.
    - Evaluated strictly at the end against the evaluation rubric.
-   - Typically scores **~9.0 / 14.0** (omits unit tests, bypasses graph adjacency checks, hallucinates non-movie trivia, leaks errors).
 
-2. **The Harnessed Approach ("Context / Skills / TDD / Rubric with ADK")**:
-   - Ingests the explicit Goal alongside persistent harness context (`specs/harness_context.md`, representing `GEMINI.md` rules: Python 3.13, PEP 585 typing, mandatory TDD).
-   - Driven by an autonomous feedback loop orchestrated with Google ADK (up to 5 iterations).
+2. **The Harnessed Approach ("Context / Skills / TDD / Loop with rubric")**:
+   - Uses the same goal / spec as the unharnessed approach.
+   - Adds additional harness context (`harness/harness_context.md`) that includes coding conventions, guardrails, and mandates use of test-driven development (TDD).
+   - Runs as an iterative loop.
    - Activates on-demand agent skills (`test-driven-development`, `api-and-interface-design`, `gemini-api-dev`).
-   - Writes unit tests first (TDD Red phase), builds implementation (Green phase), and refactors.
-   - Gates every iteration through the multi-point evaluation rubric from Part 2 of the series.
-   - Feeds failures back into living memory for self-healing until reaching a verified **14.0 / 14.0** (100% pass rate).
-
----
+   - Gates every loop iteration through a multi-point evaluation rubric that includes both deterministic and semantic tests.
+   - Feeds failures back into living memory for self-healing.
 
 ### Decoupling Engineering Discipline from the Application Spec
 
 A key insight simulated in this workbench is the clean architectural separation between **Task Goal Specifications** and **Reusable Engineering Guardrails**:
-- **Application Specification (`specs/cosmic_conquest_spec.md`)**: Ephemeral, domain-specific requirements defining *what* to build (the space conquest game rules, sector graph, and API contracts). Both pipelines receive this exact same specification.
-- **Harness Context & Guardrails (`specs/harness_context.md`)**: Reusable, persistent organisation- and team-level engineering policies (`GEMINI.md` rules, PEP 585 typing, mandatory TDD, Pydantic input parameterisation, and UI contracts) defining *how* code must be engineered.
+- **Application Specification (`specs/cosmic_conquest_spec.md`)**: Requirements defining *what* to build (the space conquest game rules, sector graph, and API contracts). Both pipelines receive this exact same specification.
+- **Harness Context & Guardrails (`harness/harness_context.md`)**: Reusable, persistent global-, organisation- or team-level engineering policies (rules, mandatory TDD, Pydantic input parameterisation) defining *how* code must be engineered.
 
-In enterprise software engineering, you never pollute individual feature tickets or prompts with repetitive coding hygiene instructions. Engineering standards are governed centrally at the organisation or team level and automatically inherited by the harness across all tasks.
-
----
+TL;DR - we should not pollute individual feature tickets or prompts with repetitive coding hygiene instructions. Engineering standards are governed centrally at the organisation or team level and automatically inherited by the harness across all tasks.
 
 ## Typical Results & Empirical Comparison
 
@@ -56,39 +52,34 @@ A representative head-to-head comparison run reveals a stark contrast across lat
 ### Why the Harnessed Track Outperforms Vibe Coding
 
 1. **Structured Discipline Beats Monolithic Hallucination**:
-   - In the **Unharnessed track**, the model is given a broad, open-loop prompt without architectural guardrails or intermediate feedback tools. It attempts to emit a sprawling, full-stack application in a single shot. This generates excessive token volume (45,571 tokens), bloats wall-clock generation time (2m 16s), and leads to ungrounded code that fails basic integration contracts.
-   - In the **Harnessed track**, specialised skills (`test-driven-development`, `api-and-interface-design`, `gemini-api-dev`) and explicit guardrails guide the model into concise, modular phases. It writes unit tests first, implements only what is required, and avoids redundant boilerplate—generating **46.7% fewer tokens** and completing **4.25x faster**.
+   - In the **Unharnessed track**, the model is given a broad, open-loop prompt without architectural guardrails or intermediate feedback tools.
+   - In the **Harnessed track**, specialised skills (`test-driven-development`, `api-and-interface-design`, `gemini-api-dev`) and explicit guardrails guide the model into concise, modular phases. It writes unit tests first, implements only what is required.
 
 2. **Autonomous Self-Healing via Rubric Diagnostics**:
-   - The unharnessed agent has no second chance: any flaws generated on turn 1 remain permanently baked into the candidate workspace (omitting unit tests, violating PEP 585 typing rules, and ignoring sector graph adjacency constraints, leaving it at **9.0 / 14.0**).
-   - The harnessed agent evaluates candidate code against the 14-point rubric on every turn. Specific diagnostic feedback is reinjected into living memory, enabling targeted remediation in Iteration 2 to achieve a verified **14.0 / 14.0 (100%)** score.
+   - The unharnessed agent has no second chance. In reality, a human would need to then address and fix all the issues.
+   - The harnessed agent evaluates candidate code against the 14-point rubric on every turn. Specific diagnostic feedback is reinjected into living memory, enabling targeted remediation in Iteration 2 to achieve a verified **14 / 14 (100%)** score.
 
 3. **Lower Operational Cost Through Targeted Efficiency**:
-   - Because open-loop vibe coding generates bloated files, repetitive boilerplate, and unconstrained trivia content, its financial cost is significantly higher ($0.0168).
-   - The harnessed feedback loop keeps each model call constrained and targeted, resulting in a **60.1% cost reduction** ($0.0067) while guaranteeing production-grade quality.
+   - Usually, the harnessed approach uses fewer or similar numbers of tokens to the unharnessed approach. Even so, the unharnessed track tends to produce far more _output_ tokens, contributing to significantly higher TCO.
 
 4. **Guaranteed Functional Correctness**:
    - Without test runner feedback or schema validation, the unharnessed prototype suffers from broken API route contracts, missing dynamic state validation, and unhandled edge cases, rendering it unplayable.
    - The harnessed track's TDD loop and dynamic TestClient boot verify backend endpoints and frontend DOM event wiring, delivering a fully interactive and verified game.
 
----
-
 ## The Meta Architecture: The Harness (Layer 1) vs. The Generated Workload (Layer 2)
 
 > 💡 **Notice**: This solution is inherently **meta**. To understand the repository cleanly, remember the boundary:
-> * **Layer 1: The Harness Workbench (The Test Rig / Wind Tunnel)** — This repository itself (`app/`, `golden_tests/`, `specs/`, `Makefile`). It hosts the evaluation gate, SSE stream, metrics, and orchestrator. It is NOT the game.
-> * **Layer 2: The Generated Target Application (The Subject Racecar)** — The tactical Sci-Fi movie game (**"Cosmic Trivia & Strategy Conquest"**) created dynamically on-demand inside `workspaces/unharnessed/` and `workspaces/harnessed/`. You can play it live inside the embedded preview tabs!
+> * **Layer 1: The Harness Workbench (The Test Rig)** — This repository itself (`app/`, `golden_tests/`, `specs/`, `Makefile`). It hosts the evaluation gate, metrics, and orchestrator. It is NOT the game.
+> * **Layer 2: The Generated Target Application** — The tactical Sci-Fi movie game (**"Cosmic Trivia & Strategy Conquest"**) created dynamically on-demand inside `workspaces/unharnessed/` and `workspaces/harnessed/`. You can play it live inside the embedded preview tabs!
 >
 > 📖 *For a complete deep-dive into the architectural boundaries and rubric mechanics, see [ARCHITECTURE.md](ARCHITECTURE.md).*
-
----
 
 ## Repository Structure
 
 ```
 harness-engineering-demo/
 ├── app/                        # Layer 1: Core engine, orchestrator, rubric evaluation, token tracking, templates, static assets
-│   ├── agents/                 # Unharnessed single-turn and harnessed multi-iteration ADK runners
+│   ├── agents/                 # Unharnessed single-pass and harnessed multi-iteration ADK runners
 │   ├── replay/                 # Pre-recorded presentation player and replay_data.json
 │   ├── rubric/                 # Two-tier 14-point evaluation engine (mechanical & semantic checks)
 │   ├── static/                 # Frontend assets: CSS stylesheets, client JavaScript, and UI icons
@@ -98,13 +89,16 @@ harness-engineering-demo/
 │   ├── main.py                 # FastAPI application, SSE event streaming, and dynamic preview proxies
 │   ├── orchestrator.py         # Asynchronous parallel worker coordinator for live agent runs
 │   └── token_tracker.py        # Token telemetry, cost estimation ($), and metric accumulation
+├── harness/                    # Layer 1: Harness guardrails, skills, and living memory
+│   ├── harness_context.md      # Reusable harness policies and guardrails (how to engineer it)
+│   ├── skills/                 # Agent skills (test-driven-development, api-and-interface-design, gemini-api-dev)
+│   └── output/LIVING_MEMORY.md # Dynamic living memory ledger and failure feedback log
+├── specs/                      # Task specifications
+│   └── cosmic_conquest_spec.md # Shared application specification (what to build)
+├── golden_tests/               # Independent 31-test acceptance suite validating candidate workspaces
 ├── snapshots/                  # Pre-recorded candidate workspaces for zero-latency presentation replay
 │   ├── unharnessed/            # Reference unharnessed prototype snapshot (~9.0 / 14.0)
 │   └── harnessed/              # Reference verified harnessed candidate snapshot (14.0 / 14.0)
-├── specs/                      # Task specifications and standing engineering policies
-│   ├── cosmic_conquest_spec.md # Shared application specification (what to build)
-│   └── harness_context.md      # Reusable harness policies and guardrails (how to engineer it)
-├── golden_tests/               # Independent 28-test acceptance suite validating candidate workspaces
 ├── workspaces/                 # Layer 2: Ephemeral generation scratchpads for unharnessed and harnessed agents
 │   ├── unharnessed/            # Scratchpad for open-loop unharnessed code generation
 │   └── harnessed/              # Scratchpad for iterative ADK self-healing code generation
@@ -118,14 +112,12 @@ harness-engineering-demo/
 ## Features
 
 - **Concurrent Parallel Execution**: Both candidate pipelines execute simultaneously side-by-side using asynchronous workers, allowing presenters and audiences to observe the real-time contrast.
-- **Shared Goal & Harness Context Viewers**: Clickable `specs/cosmic_conquest_spec.md` and `specs/harness_context.md` badges opening a modal dialogue with rendered Markdown or raw view, demonstrating that the goal is shared whilst the harness guardrails are injected only into the engineered track.
+- **Shared Goal & Harness Context Viewers**: Clickable `specs/cosmic_conquest_spec.md` and `harness/harness_context.md` badges opening a modal dialogue with rendered Markdown or raw view, demonstrating that the goal is shared whilst the harness guardrails are injected only into the engineered track.
 - **Side-by-Side Live Streaming**: Real-time Server-Sent Events (SSE) streaming model reasoning, tool executions, test outputs, and dynamic rubric scorecards.
 - **Dedicated Per-Panel & Global Metrics**: Real-time token counts, estimated dollar costs ($), and rubric scores displayed on each agent panel, alongside combined global counters in the top banner.
 - **Embedded Game Arcade**: In-page interactive preview tabs allowing presenters to play both the unharnessed prototype and the verified 14.0 / 14.0 harnessed game.
 - **Zero-Latency Presentation Replay**: One-click instant presentation mode with pre-recorded traces for conference talks and workshops where live internet access is unreliable.
 - **Deployable to Google Cloud Run**: Containerised on Python 3.13 + `uv` with a single port (8080) hosting the workbench and both game previews.
-
----
 
 ## Getting Started
 
