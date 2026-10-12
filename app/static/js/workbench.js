@@ -38,9 +38,9 @@ function updateGlobalStatus(text, color = null) {
 
 function setComparisonRunningState(running) {
     isComparisonRunning = running;
-    const compareBtn = document.getElementById('btn-compare');
-    const replayBtn = document.getElementById('btn-replay');
-    const resetBtn = document.getElementById('btn-reset');
+    const compareBtn = document.getElementById('btn-compare') || document.querySelector("button[onclick*='/api/stream/compare']");
+    const replayBtn = document.getElementById('btn-replay') || document.querySelector("button[onclick*='/api/stream/replay']");
+    const resetBtn = document.getElementById('btn-reset') || document.querySelector("button[onclick*='resetUI']");
 
     if (compareBtn) {
         compareBtn.disabled = false;
@@ -418,6 +418,8 @@ function handleStreamEvent(evt) {
             if (evt.total_duration_seconds) {
                 targetTotalDurationSec = evt.total_duration_seconds;
             }
+        } else {
+            setComparisonRunningState(true);
         }
     } else if (evt.type === 'unharnessed_event') {
         const data = evt.data;

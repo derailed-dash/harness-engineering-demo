@@ -161,8 +161,9 @@ def test_adk_harness_tools_execution(tmp_path: Path) -> None:
 
 
 @pytest.mark.anyio
-async def test_rubric_evaluation_gate_agent_escalation(tmp_path: Path) -> None:
+async def test_rubric_evaluation_gate_agent_escalation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Verify RubricEvaluationGateAgent records living memory and escalates when 14/14 checks pass."""
+    monkeypatch.setattr("app.rubric.semantic.get_genai_client", lambda: (None, "NONE"))
     ws_dir = tmp_path / "candidate"
     memory_file = tmp_path / "LIVING_MEMORY.md"
 

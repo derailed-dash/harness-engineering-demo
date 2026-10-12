@@ -49,3 +49,6 @@ venvPath = "."
 venv = ".venv"
 include = ["app", "golden_tests", "verify_demo.py"]
 exclude = ["workspaces", ".venv", "snapshots"]
+
+[tool.codespell]
+skip = ".git,.venv,workspaces,snapshots,app/replay/replay_data.json,*.lock"
