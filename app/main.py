@@ -156,13 +156,12 @@ def cancel_comparison() -> dict[str, Any]:
 
 
 @app.get("/api/stream/compare")
-async def stream_live_compare(request: Request) -> StreamingResponse:
+async def stream_live_compare() -> StreamingResponse:
     """SSE endpoint for live model execution."""
     async def event_generator():
         try:
             async for event in orchestrator.stream_comparison():
-                if await request.is_disconnected():
-                    orchestrator.cancel_active_run()
+                if orchestrator.was_cancelled:
                     break
                 payload = json.dumps(event)
                 yield f"data: {payload}\n\n"

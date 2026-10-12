@@ -144,9 +144,12 @@ def test_adk_harness_tools_execution(tmp_path: Path) -> None:
     assert read_res["status"] == "ok"
     assert "assert 1 + 1 == 2" in read_res["content"]
 
-    # 3. Path traversal rejection
+    # 3. Path traversal and directory target rejection
     traversal_res = write_workspace_file("../outside.py", "print(1)", ctx)  # type: ignore[arg-type]
     assert traversal_res["status"] == "error"
+    dir_res = write_workspace_file("tests", "print(1)", ctx)  # type: ignore[arg-type]
+    assert dir_res["status"] == "error"
+    assert "directory" in dir_res["message"]
 
     # 4. Run pytest and ruff tools
     pytest_res = run_pytest(ctx)  # type: ignore[arg-type]

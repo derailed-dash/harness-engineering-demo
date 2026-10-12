@@ -136,6 +136,18 @@ def write_workspace_file(
         _record_trajectory(tool_context, "write_workspace_file", "error", rel_or_err)
         return {"status": "error", "message": rel_or_err}
 
+    if target_path.is_dir():
+        _record_trajectory(
+            tool_context,
+            "write_workspace_file",
+            "error",
+            f"Target '{rel_or_err}' is a directory.",
+        )
+        return {
+            "status": "error",
+            "message": f"Target path '{rel_or_err}' is a directory, not a file.",
+        }
+
     target_path.parent.mkdir(parents=True, exist_ok=True)
     target_path.write_text(content, encoding="utf-8")
 

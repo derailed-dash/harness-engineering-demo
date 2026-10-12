@@ -682,8 +682,9 @@ async def run_harnessed_pipeline(
             "stage": "completed",
             "iteration": current_iteration,
             "message": (
-                f"Harness Gate Passed: {int(final_scorecard['score'])}/{int(final_scorecard['max_score'])} "
-                "criteria satisfied. Autonomous ADK loop stopping cleanly."
+                f"Harness Gate {'Passed' if final_scorecard.get('is_passing') else 'Halted'}: "
+                f"{int(final_scorecard['score'])}/{int(final_scorecard['max_score'])} criteria satisfied. "
+                "Autonomous ADK loop stopping cleanly."
             ),
             "scorecard": final_scorecard,
             "token_metrics": token_tracker.to_dict(),
