@@ -38,7 +38,7 @@ from app.agents.tools import (
     write_workspace_file,
 )
 from app.agents.unharnessed import create_unharnessed_agent
-from app.config import load_harness_context
+from app.config import DEFAULT_MODEL, load_harness_context
 
 
 class _StubToolContext:
@@ -50,7 +50,7 @@ class _StubToolContext:
 
 def test_unharnessed_agent_is_bare_adk_agent() -> None:
     """Verify Track 1 creates a bare ADK Agent with no persona, context, or tools."""
-    agent = create_unharnessed_agent(model="gemini-2.5-flash")
+    agent = create_unharnessed_agent(model=DEFAULT_MODEL)
     assert isinstance(agent, Agent)
     assert agent.name == "unharnessed_vibe_agent"
     assert agent.instruction == ""
@@ -59,7 +59,7 @@ def test_unharnessed_agent_is_bare_adk_agent() -> None:
 
 def test_harnessed_loop_agent_structure() -> None:
     """Verify Track 2 creates an ADK LoopAgent with builder LlmAgent and RubricEvaluationGateAgent."""
-    loop_agent = create_harness_loop_agent(model="gemini-2.5-flash", max_iterations=5)
+    loop_agent = create_harness_loop_agent(model=DEFAULT_MODEL, max_iterations=5)
     assert isinstance(loop_agent, LoopAgent)
     assert loop_agent.name == "harness_engineering_loop"
     assert loop_agent.max_iterations == 5
@@ -77,7 +77,7 @@ def test_harnessed_loop_agent_structure() -> None:
 
 def test_builder_instruction_provider_uses_external_harness_context() -> None:
     """Verify builder instruction provider injects harness_context.md and living memory diagnostics."""
-    builder = create_builder_agent(model="gemini-2.5-flash")
+    builder = create_builder_agent(model=DEFAULT_MODEL)
     assert callable(builder.instruction)
 
     class _DummyReadonlyContext:

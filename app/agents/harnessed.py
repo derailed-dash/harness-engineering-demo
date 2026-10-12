@@ -142,7 +142,7 @@ def create_builder_agent(model: Gemini | str) -> Agent:
         generate_content_config=types.GenerateContentConfig(
             temperature=0.2,
             max_output_tokens=2048,
-            # Disable extended thinking budget so Gemini 2.5 Flash responds in ~10-15s per
+            # Disable extended thinking budget so Gemini 3.8 Flash responds in ~10-15s per
             # loop iteration rather than spending 30s+ in internal chain-of-thought.
             # Iterative reasoning is handled externally by the ADK LoopAgent + Living Memory.
             thinking_config=types.ThinkingConfig(thinking_budget=0),
