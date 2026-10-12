@@ -85,6 +85,8 @@ def test_builder_instruction_provider_uses_external_harness_context() -> None:
             self.state = state
 
     harness_ctx = load_harness_context()
+    assert "game_engine.py" not in harness_ctx
+    assert "trivia_service.py" not in harness_ctx
     ctx_iter1 = _DummyReadonlyContext(
         state={
             "harness_context": harness_ctx,
@@ -95,6 +97,7 @@ def test_builder_instruction_provider_uses_external_harness_context() -> None:
     assert isinstance(rendered_iter1, str)
     assert "Principal Software Engineer" in rendered_iter1
     assert "Strict PEP 585" in rendered_iter1
+    assert "<available_skills>" in rendered_iter1
     assert "LIVING MEMORY DIAGNOSTICS" not in rendered_iter1
 
     ctx_iter2 = _DummyReadonlyContext(

@@ -52,6 +52,7 @@ from app.config import (
     PLATEAU_LIMIT,
     load_cosmic_conquest_spec,
     load_harness_context,
+    load_harness_skill_catalog,
     load_harness_skills,
 )
 from app.living_memory import LivingMemoryManager
@@ -105,10 +106,11 @@ def get_harnessed_initial_prompt() -> str:
 
 
 def build_harness_instruction(ctx: ReadonlyContext) -> str:
-    """ADK InstructionProvider assembling standing guardrails, skills, and living memory feedback.
+    """ADK InstructionProvider assembling standing guardrails, skills catalog, and living memory feedback.
 
     Reads persona and engineering guardrails from `ctx.state["harness_context"]`
-    (populated from `harness/harness_context.md`), appends activated skill instructions
+    (populated from `harness/harness_context.md`), dynamically lists the `<available_skills>`
+    catalog discovered from `harness/skills/*/SKILL.md`, appends activated skill instructions
     from `ctx.state["skills_context"]`, and injects any active failure diagnostics
     recorded in `ctx.state["living_memory_feedback"]` by the Rubric Evaluation Gate.
     """
@@ -117,6 +119,19 @@ def build_harness_instruction(ctx: ReadonlyContext) -> str:
     living_memory_feedback = str(ctx.state.get("living_memory_feedback") or "").strip()
 
     sections = [harness_context]
+
+    catalog = load_harness_skill_catalog()
+    if catalog:
+        catalog_lines = [
+            f"- `{skill_id}` ({meta['name']}): {meta['description']}"
+            for skill_id, meta in sorted(catalog.items())
+        ]
+        sections.append(
+            "<available_skills>\n"
+            + "\n".join(catalog_lines)
+            + "\n</available_skills>"
+        )
+
     if skills_context:
         sections.append(f"# ACTIVATED ENGINEERING SKILLS (harness/skills/)\n\n{skills_context}")
     if living_memory_feedback:

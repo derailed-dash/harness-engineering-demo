@@ -18,22 +18,16 @@ from typing import Any
 
 from google.adk.tools import ToolContext
 
-from app.config import load_harness_skills
+from app.config import load_harness_skill_catalog, load_harness_skills
 
-# Display metadata for Workbench UI skill badges and event cards
+# Default display overrides for Workbench UI skill badges; any new skill added to
+# harness/skills/<name>/SKILL.md is discovered automatically via load_harness_skill_catalog().
 SKILL_METADATA: dict[str, dict[str, str]] = {
-    "test-driven-development": {
-        "name": "Test-Driven Development (TDD)",
-        "rationale": "Enforces red-green-refactor loop covering star map adjacency and combat mechanics.",
-    },
-    "api-and-interface-design": {
-        "name": "API & Interface Design",
-        "rationale": "Guarantees parameter validation and rejection of invalid sector attacks with actionable error details.",
-    },
-    "gemini-api-dev": {
-        "name": "Gemini API Development",
-        "rationale": "Restricts trivia questions strictly to real canonical films (e.g. Blade Runner, Alien, The Matrix, Dune).",
-    },
+    skill_id: {
+        "name": entry["name"],
+        "rationale": entry["description"],
+    }
+    for skill_id, entry in load_harness_skill_catalog().items()
 }
 
 
@@ -103,15 +97,17 @@ def activate_skill(skill_name: str, tool_context: ToolContext) -> dict[str, Any]
         tool_context.state["activated_skills"] = activated
 
     _record_trajectory(tool_context, "activate_skill", "ok", normalised)
-    meta = SKILL_METADATA.get(
+    catalog = load_harness_skill_catalog()
+    entry = catalog.get(normalised) or SKILL_METADATA.get(
         normalised,
-        {"name": normalised, "rationale": "Loaded specialised engineering skill instructions."},
+        {"name": normalised, "description": "Loaded specialised engineering skill instructions."},
     )
+    rationale = entry.get("description") or entry.get("rationale") or "Loaded specialised engineering skill instructions."
     return {
         "status": "ok",
         "skill": normalised,
-        "name": meta["name"],
-        "rationale": meta["rationale"],
+        "name": entry["name"],
+        "rationale": rationale,
         "instructions": skills[normalised],
     }
 
