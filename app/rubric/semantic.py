@@ -216,6 +216,7 @@ def run_semantic_tier(workspace_path: Path, token_tracker: TokenMetrics | None =
                     response_mime_type="application/json",
                     temperature=0.1,
                     max_output_tokens=MAX_OUTPUT_TOKENS,
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),
                 ),
             )
             

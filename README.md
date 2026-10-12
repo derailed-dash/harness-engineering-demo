@@ -82,24 +82,29 @@ A representative head-to-head comparison run reveals a stark contrast across lat
 
 ```
 harness-engineering-demo/
+├── .github/workflows/          # Automated PR quality & test suite, Gemini PR review & issue triage GitHub Actions
 ├── app/                        # Layer 1: Core engine, orchestrator, rubric evaluation, token tracking, templates, static assets
-│   ├── agents/                 # Unharnessed single-pass and harnessed multi-iteration ADK runners
+│   ├── agents/                 # Google ADK agent pipelines and reusable harness tools
+│   │   ├── unharnessed.py      # Track 1: Unharnessed (Single Pass) bare ADK Agent & Runner
+│   │   ├── harnessed.py        # Track 2: Harnessed ADK LoopAgent, Builder LlmAgent, and RubricEvaluationGateAgent
+│   │   ├── tools.py            # Reusable ADK FunctionTools (activate_skill, write/read file, pytest, ruff)
+│   │   └── baselines.py        # Deterministic synthetic workspace builders for offline verification
 │   ├── replay/                 # Pre-recorded presentation player and replay_data.json
 │   ├── rubric/                 # Two-tier 14-point evaluation engine (mechanical & semantic checks)
 │   ├── static/                 # Frontend assets: CSS stylesheets, client JavaScript, and UI icons
 │   ├── templates/              # Jinja2 HTML templates for the split-screen workbench interface
-│   ├── client_factory.py       # Dual-mode authentication (Google Cloud ADC / Vertex AI & API key)
+│   ├── client_factory.py       # Dual-mode authentication (Google Cloud ADC / Vertex AI & API key + ADK Gemini adapter)
 │   ├── config.py               # Centralised workbench configuration and environment parsing
 │   ├── main.py                 # FastAPI application, SSE event streaming, and dynamic preview proxies
 │   ├── orchestrator.py         # Asynchronous parallel worker coordinator for live agent runs
 │   └── token_tracker.py        # Token telemetry, cost estimation ($), and metric accumulation
 ├── harness/                    # Layer 1: Harness guardrails, skills, and living memory
-│   ├── harness_context.md      # Reusable harness policies and guardrails (how to engineer it)
+│   ├── harness_context.md      # Reusable harness policies, persona, and tool protocol (how to engineer it)
 │   ├── skills/                 # Agent skills (test-driven-development, api-and-interface-design, gemini-api-dev)
 │   └── output/LIVING_MEMORY.md # Dynamic living memory ledger and failure feedback log
 ├── specs/                      # Task specifications
 │   └── cosmic_conquest_spec.md # Shared application specification (what to build)
-├── golden_tests/               # Independent 31-test acceptance suite validating candidate workspaces
+├── golden_tests/               # Independent 38-test acceptance suite validating workspaces, UI, and ADK agents
 ├── snapshots/                  # Layer 1: Version-controlled reference snapshots backing presentation replay
 │   ├── unharnessed/            # Reference unharnessed prototype snapshot (~9.0 / 14.0)
 │   └── harnessed/              # Reference verified harnessed candidate snapshot (14.0 / 14.0)
@@ -117,19 +122,43 @@ harness-engineering-demo/
 
 ---
 
+## Reusing the ADK Loop Harness in Your Own Project
+
+Because the harness is built on standard **Google Agent Development Kit (`google-adk`)** primitives, lifting it into your own repository is straightforward. Almost all of the orchestration and tool logic is already **100% project-agnostic**:
+
+| Component | File(s) | Portability | What You Do When Lifting |
+|:---|:---|:---|:---|
+| **ADK Workspace Tools** | [`app/agents/tools.py`](app/agents/tools.py) | **100% Portable** | Copy as-is. `activate_skill`, `write_workspace_file`, `read_workspace_file`, `run_pytest`, and `run_ruff_check` operate dynamically on `tool_context.state["workspace_dir"]`. |
+| **ADK Loop & Gate Agent** | [`app/agents/harnessed.py`](app/agents/harnessed.py) | **95% Portable** | Copy `build_harness_instruction`, `create_builder_agent`, `RubricEvaluationGateAgent`, and `create_harness_loop_agent`. Remove the demo-only offline snapshot fallback (`baselines.py`). |
+| **Auth & Model Factory** | [`app/client_factory.py`](app/client_factory.py) | **100% Portable** | Copy as-is for automatic Google Cloud ADC (Vertex AI) and `GEMINI_API_KEY` dual-mode resolution. |
+| **Engineering Guardrails & Skills** | [`harness/harness_context.md`](harness/harness_context.md), [`harness/skills/`](harness/skills/) | **100% Portable** | Copy as-is for Python 3.13 / FastAPI / TDD projects, or drop new `SKILL.md` folders into `harness/skills/` (discovered automatically from frontmatter). |
+| **Evaluation Rubric** | [`app/rubric/mechanical.py`](app/rubric/mechanical.py), [`app/rubric/evaluator.py`](app/rubric/evaluator.py) | **Pluggable Gate** | Keep universal mechanical checks (`pytest`, `ruff`, PEP 585 AST, input safety, tool trajectory) and replace the domain-specific checks (1.6–1.8 and Tier 2 prompts) with your project's acceptance criteria. |
+| **Task Specification** | [`specs/cosmic_conquest_spec.md`](specs/cosmic_conquest_spec.md) | **Project-Specific** | Replace with your own feature specification or PRD. |
+
+### Minimal 4-Step Adaptation Guide
+
+1. **Copy the Core Harness Package**: Copy [`app/agents/tools.py`](app/agents/tools.py), [`app/agents/harnessed.py`](app/agents/harnessed.py), [`app/client_factory.py`](app/client_factory.py), and the [`harness/`](harness/) directory into your project.
+2. **Define Your Goal Specification**: Write your target feature or application requirements in a Markdown spec file (e.g. `specs/my_feature_spec.md`).
+3. **Plug In Your Evaluation Gate**: Point `RubricEvaluationGateAgent` at your own `evaluate_workspace(workspace_dir, tool_trace)` function (keeping `pytest` and `ruff` mechanical gates, and customising any domain-specific checks).
+4. **Initialise Session State & Run**: Create an `InMemorySessionService` session populated with `workspace_dir`, `harness_context`, and `available_skills`, then invoke `Runner.run_async()` with `create_harness_loop_agent()`.
+
+---
+
 ## Features
 
-- **Concurrent Parallel Execution**: Both candidate pipelines execute simultaneously side-by-side using asynchronous workers, allowing presenters and audiences to observe the real-time contrast.
+- **Concurrent Parallel Execution & Live Run Cancellation**: Both candidate pipelines execute simultaneously side-by-side using asynchronous workers. While a live run is active, the **"Run Comparison"** button transforms into an interactive **"Kill Run"** control (`POST /api/cancel`) that cleanly aborts background ADK agent tasks on demand.
 - **Shared Goal & Harness Context Viewers**: Clickable `specs/cosmic_conquest_spec.md` and `harness/harness_context.md` badges opening a modal dialogue with rendered Markdown or raw view, demonstrating that the goal is shared whilst the harness guardrails are injected only into the engineered track.
 - **Side-by-Side Live Streaming**: Real-time Server-Sent Events (SSE) streaming model reasoning, tool executions, test outputs, and dynamic rubric scorecards.
 - **Dedicated Per-Panel & Global Metrics**: Real-time token counts, estimated dollar costs ($), and rubric scores displayed on each agent panel, alongside combined global counters in the top banner.
 - **Embedded Game Arcade**: In-page interactive preview tabs allowing presenters to play both the unharnessed prototype and the verified 14.0 / 14.0 harnessed game.
 - **Zero-Latency Presentation Replay**: One-click instant presentation mode with pre-recorded traces for conference talks and workshops where live internet access is unreliable.
+- **Automated CI Quality & Golden Test Gates**: GitHub Actions workflows ([`.github/workflows/pr-checks.yml`](.github/workflows/pr-checks.yml) and [`.github/workflows/gemini-review.yml`](.github/workflows/gemini-review.yml)) run `codespell`, `ruff`, `pyright`, the 38-test golden suite, and automated Gemini PR code reviews on every pull request.
 - **Deployable to Google Cloud Run**: Containerised on Python 3.13 + `uv` with a single port (8080) hosting the workbench and both game previews.
 
 ## Getting Started
 
 ### 1. Prerequisites
+
 - Python 3.13+ and [`uv`](https://docs.astral.sh/uv/) (for local native execution)
 - Or Docker (for local container execution)
 - Or Google Cloud SDK / `gcloud` (for Cloud Run deployment or ADC authentication)
@@ -182,13 +211,22 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
 Open your browser to:
 [http://localhost:8080](http://localhost:8080)
 
-Additional useful `Makefile` targets:
-```bash
-make lint             # Run full quality suite: Codespell + Ruff + Pyright
-make test             # Run independent golden test suite
-make verify           # Run end-to-end pipeline verification (Unharnessed vs Harnessed)
-make clean-workspaces # Clean candidate workspaces while preserving README files
-```
+#### Useful Commands (`Makefile` Targets)
+
+| Command | Description |
+|:---|:---|
+| `make install` | Install and synchronise dependencies into `.venv` using `uv sync` |
+| `make run` / `make dev` | Launch the FastAPI Workbench server on `http://localhost:8080` with hot reload |
+| `make lint` | Run the full static quality suite (`codespell`, `ruff check`, and `pyright`) |
+| `make lint-fix` | Auto-fix lint and formatting issues with `ruff check --fix .` and check spelling |
+| `make typecheck` | Run `pyright` static type analysis |
+| `make test` | Run the independent 38-test golden acceptance suite (`pytest golden_tests/ -v`) |
+| `make verify` | Run end-to-end offline pipeline and rubric verification (`verify_demo.py`) |
+| `make docker-build` | Build the production `harness-engineering-demo` Docker container image |
+| `make docker-run` | Run the production Docker container locally on port `8080` |
+| `make deploy` | Deploy the workbench directly to Google Cloud Run via [`scripts/deploy.sh`](scripts/deploy.sh) |
+| `make clean-workspaces` | Wipe generated files inside `workspaces/` whilst preserving `README.md` files |
+| `make clean` | Clean workspaces plus local `.pytest_cache`, `.ruff_cache`, and `__pycache__` directories |
 
 ### 2. Run as a Local Container (Docker)
 
@@ -243,7 +281,7 @@ When running on Google Cloud Run, the workbench automatically authenticates usin
 ## Two Execution Modes
 
 1. **Presentation Replay (Instant)**: Click **"Presentation Replay"** in the top navigation bar. Instantly streams pre-recorded comparison traces and copies pre-built candidates from `snapshots/` into `workspaces/` so both interactive game previews run immediately with zero network latency.
-2. **Run Comparison (Live)**: Click **"Run Comparison"** to invoke `gemini-3.8-flash` in real-time concurrently across both candidate pipelines.
+2. **Run Comparison (Live) & Kill Run**: Click **"Run Comparison"** to invoke `gemini-3.8-flash` in real time concurrently across both candidate pipelines. While a comparison is running, the button toggles to **"Kill Run"**, allowing you to abort the live SSE stream and cancel background agent tasks immediately.
 
 ---
 

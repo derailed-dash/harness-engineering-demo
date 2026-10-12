@@ -1,0 +1,46 @@
+name: "✅ PR Quality & Golden Tests"
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    name: "Lint, Typecheck & Golden Tests (Python 3.13 + uv)"
+    runs-on: ubuntu-latest
+    env:
+      CI: "true"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install uv and Python 3.13
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.13"
+
+      - name: Sync dependencies
+        run: uv sync --locked
+
+      - name: Run Codespell
+        run: uvx codespell@latest -s
+
+      - name: Run Ruff linter
+        run: uvx ruff@latest check .
+
+      - name: Run Pyright static typecheck
+        run: uv run pyright
+
+      - name: Run Golden Acceptance Tests
+        run: uv run pytest golden_tests/ -v
+

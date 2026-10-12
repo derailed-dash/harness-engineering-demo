@@ -3,6 +3,8 @@
  */
 
 let eventSource = null;
+let activeEventSource = null;
+let isComparisonRunning = false;
 let startTime = null;
 let timerInterval = null;
 let unharnessedStartTime = null;
@@ -20,6 +22,87 @@ let unharnessedTotalTokens = 0;
 let unharnessedCostUsd = 0.0;
 let harnessedTotalTokens = 0;
 let harnessedCostUsd = 0.0;
+
+function updateGlobalStatus(text, color = null) {
+    const metricStatusEl = document.getElementById('metric-status');
+    if (metricStatusEl) {
+        metricStatusEl.innerText = text;
+        if (color) metricStatusEl.style.color = color;
+    }
+    const globalStatusEl = document.getElementById('global-status');
+    if (globalStatusEl) {
+        globalStatusEl.innerText = text;
+        if (color) globalStatusEl.style.color = color;
+    }
+}
+
+function setComparisonRunningState(running) {
+    isComparisonRunning = running;
+    const compareBtn = document.getElementById('btn-compare') || document.querySelector("button[onclick*='/api/stream/compare']");
+    const replayBtn = document.getElementById('btn-replay') || document.querySelector("button[onclick*='/api/stream/replay']");
+    const resetBtn = document.getElementById('btn-reset') || document.querySelector("button[onclick*='resetUI']");
+
+    if (compareBtn) {
+        compareBtn.disabled = false;
+        if (running) {
+            compareBtn.classList.remove('btn-primary');
+            compareBtn.classList.add('btn-kill', 'is-running');
+            compareBtn.innerHTML = '<i class="fa-solid fa-skull-crossbones"></i> Kill Run';
+            compareBtn.title = 'Kill active comparison run immediately';
+        } else {
+            compareBtn.classList.remove('btn-kill', 'is-running');
+            compareBtn.classList.add('btn-primary');
+            compareBtn.innerHTML = '<i class="fa-solid fa-play"></i> Run Comparison';
+            compareBtn.title = 'Run live comparison against Gemini model';
+        }
+    }
+
+    if (replayBtn) {
+        replayBtn.disabled = running;
+    }
+    if (resetBtn) {
+        resetBtn.disabled = running;
+    }
+}
+
+async function killComparisonRun() {
+    if (activeEventSource) {
+        activeEventSource.close();
+        activeEventSource = null;
+    }
+    if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+    }
+    stopTimer();
+    setComparisonRunningState(false);
+    updateGlobalStatus('Comparison Run Killed by User', 'var(--accent-red)');
+
+    if (!unharnessedCompleted) {
+        appendFeedCard(
+            'unharnessed-feed',
+            'Run Terminated',
+            'Comparison run killed by user before completion.',
+            null,
+            true
+        );
+    }
+    if (!harnessedCompleted) {
+        appendFeedCard(
+            'harnessed-feed',
+            'Run Terminated',
+            'Comparison run killed by user before completion.',
+            null,
+            true
+        );
+    }
+
+    try {
+        await fetch('/api/cancel', { method: 'POST' });
+    } catch (e) {
+        console.error('Failed to cancel active comparison run on backend:', e);
+    }
+}
 
 function updateCombinedMetrics() {
     const totalTokens = unharnessedTotalTokens + harnessedTotalTokens;
@@ -143,15 +226,19 @@ function clearFeeds() {
 
 
 async function resetUI() {
+    if (activeEventSource) {
+        activeEventSource.close();
+        activeEventSource = null;
+    }
     if (eventSource) {
         eventSource.close();
         eventSource = null;
     }
     stopTimer();
+    setComparisonRunningState(false);
     clearFeeds();
 
-    document.getElementById('metric-status').innerText = 'Resetting Workspaces...';
-    document.getElementById('metric-status').style.color = 'var(--accent-cyan)';
+    updateGlobalStatus('Resetting Workspaces...', 'var(--accent-cyan)');
 
     // Restore initial guidance cards
     document.getElementById('unharnessed-feed').innerHTML = `
@@ -186,8 +273,7 @@ async function resetUI() {
         console.error('Failed to reset backend workspaces:', e);
     }
 
-    document.getElementById('metric-status').innerText = 'Ready';
-    document.getElementById('metric-status').style.color = '#94a3b8';
+    updateGlobalStatus('Ready', '#94a3b8');
     reloadPreviews(false);
 }
 
@@ -249,6 +335,15 @@ function renderScorecard(feedId, scorecard) {
 }
 
 function startStream(url) {
+    if (!url.includes('replay') && isComparisonRunning) {
+        killComparisonRun();
+        return;
+    }
+
+    if (activeEventSource) {
+        activeEventSource.close();
+        activeEventSource = null;
+    }
     if (eventSource) {
         eventSource.close();
         eventSource = null;
@@ -260,19 +355,30 @@ function startStream(url) {
     replaySpeedMultiplier = isReplayMode ? 16.0 : 1.0;
     targetTotalDurationSec = null;
 
+    if (!isReplayMode) {
+        setComparisonRunningState(true);
+    }
+
     startTimer();
     
-    document.getElementById('metric-status').innerText = 'Running Stream...';
-    document.getElementById('metric-status').style.color = 'var(--accent-cyan)';
+    updateGlobalStatus('Running Stream...', 'var(--accent-cyan)');
     
     eventSource = new EventSource(url);
+    activeEventSource = eventSource;
     
     eventSource.onmessage = (event) => {
         if (event.data === '[DONE]') {
-            eventSource.close();
+            if (activeEventSource) {
+                activeEventSource.close();
+                activeEventSource = null;
+            }
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
             stopTimer();
-            document.getElementById('metric-status').innerText = 'Completed';
-            document.getElementById('metric-status').style.color = 'var(--accent-green)';
+            setComparisonRunningState(false);
+            updateGlobalStatus('Completed', 'var(--accent-green)');
             reloadPreviews(true);
             return;
         }
@@ -287,9 +393,17 @@ function startStream(url) {
     
     eventSource.onerror = (err) => {
         console.error('SSE Error:', err);
-        eventSource.close();
+        if (activeEventSource) {
+            activeEventSource.close();
+            activeEventSource = null;
+        }
+        if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+        }
         stopTimer();
-        document.getElementById('metric-status').innerText = 'Stream Closed';
+        setComparisonRunningState(false);
+        updateGlobalStatus('Stream Closed');
     };
 }
 
@@ -304,6 +418,8 @@ function handleStreamEvent(evt) {
             if (evt.total_duration_seconds) {
                 targetTotalDurationSec = evt.total_duration_seconds;
             }
+        } else {
+            setComparisonRunningState(true);
         }
     } else if (evt.type === 'unharnessed_event') {
         const data = evt.data;
@@ -444,6 +560,7 @@ function handleStreamEvent(evt) {
         }
     } else if (evt.type === 'comparison_summary') {
         stopTimer();
+        setComparisonRunningState(false);
         if (evt.total_formatted_duration) {
             totalDuration = evt.total_formatted_duration;
             const totalEl = document.getElementById('metric-time');

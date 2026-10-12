@@ -66,8 +66,9 @@ def test_semantic_tier_heuristic_fallback_contains_2_6() -> None:
     assert c26["score"] == 1.0
 
 
-def test_full_rubric_coordination() -> None:
+def test_full_rubric_coordination(monkeypatch) -> None:
     """Verify evaluate_candidate_workspace evaluates all 14 criteria with max_score 14.0."""
+    monkeypatch.setattr("app.rubric.semantic.get_genai_client", lambda: (None, "NONE"))
     scorecard = evaluate_candidate_workspace(HARNESSED_DIR)
     assert scorecard["max_score"] == 14.0
     assert len(scorecard["tier_1_mechanical"]) == 8

@@ -50,17 +50,27 @@ async def favicon() -> FileResponse:
 def index(request: Request) -> Any:
     """Render the primary split-screen comparison workbench."""
     _, auth_mode = get_genai_client()
+    js_path = BASE_DIR / "app" / "static" / "js" / "workbench.js"
+    css_path = BASE_DIR / "app" / "static" / "css" / "workbench.css"
+    asset_version = int(
+        max(
+            js_path.stat().st_mtime if js_path.exists() else 0,
+            css_path.stat().st_mtime if css_path.exists() else 0,
+        )
+    )
     return templates.TemplateResponse(
         request=request,
         name="index.html",
         context={
             "model_name": MODEL_NAME or DEFAULT_MODEL,
             "auth_mode": auth_mode,
+            "asset_version": asset_version,
             "spec_content": load_cosmic_conquest_spec(),
             "harness_context_content": load_harness_context(),
             "harness_skills": load_harness_skills(),
             "living_memory_content": LivingMemoryManager().get_content(),
         },
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
     )
 
 
@@ -149,15 +159,27 @@ def get_skill(skill_name: str) -> dict[str, Any]:
     }
 
 
-@app.get("/api/stream/compare")
+@app.post("/api/cancel")
+def cancel_comparison() -> dict[str, Any]:
+    """Cancel any active comparison run and terminate background worker tasks."""
+    return orchestrator.cancel_active_run()
 
-async def stream_live_compare():
+
+@app.get("/api/stream/compare")
+async def stream_live_compare() -> StreamingResponse:
     """SSE endpoint for live model execution."""
     async def event_generator():
-        async for event in orchestrator.stream_comparison():
-            payload = json.dumps(event)
-            yield f"data: {payload}\n\n"
-        yield "data: [DONE]\n\n"
+        try:
+            async for event in orchestrator.stream_comparison():
+                if orchestrator.was_cancelled:
+                    break
+                payload = json.dumps(event)
+                yield f"data: {payload}\n\n"
+            if not orchestrator.was_cancelled:
+                yield "data: [DONE]\n\n"
+        finally:
+            if orchestrator.is_running:
+                orchestrator.cancel_active_run()
 
     return StreamingResponse(
         event_generator(),

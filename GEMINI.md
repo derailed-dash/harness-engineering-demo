@@ -3,14 +3,16 @@
 ## Core Principles & Vocabulary Standards
 
 ### 1. Track Terminology Standards
+
 - **Track 1 is NEVER "one-shot"**:
   - We do NOT refer to Track 1 as "one-shot" or "one-shot prompt".
   - Always call Track 1 **"Unharnessed (Single Pass)"** or **"Unharnessed (Vibe Coding)"**.
-  - Track 1 represents prompting the raw LLM directly with the specification in a single pass without engineering guardrails, active skills, unit tests, or iterative self-healing loops.
+  - Track 1 ([`app/agents/unharnessed.py`](app/agents/unharnessed.py)) represents prompting the raw LLM directly with the specification in a single pass via a bare Google ADK `Agent(instruction="", tools=[])` without engineering guardrails, active skills, unit tests, or iterative self-healing loops.
 - **Track 2 is "Harnessed Loop"**:
-  - Track 2 represents Harness Engineering: specialized skills, test-driven development (TDD), living memory persistence, linting feedback, and autonomous multi-turn self-healing.
+  - Track 2 ([`app/agents/harnessed.py`](app/agents/harnessed.py) & [`app/agents/tools.py`](app/agents/tools.py)) represents Harness Engineering implemented via a Google ADK `LoopAgent`: specialised skills, test-driven development (TDD), living memory persistence, linting feedback, and autonomous multi-turn self-healing gated by `RubricEvaluationGateAgent(BaseAgent)`.
 
 ### 2. Specification & Context Architecture
+
 - **Single Canonical Specification**:
   - The shared specification lives exclusively in `specs/cosmic_conquest_spec.md`.
   - Both Track 1 (Unharnessed) and Track 2 (Harnessed) receive and consume this exact same specification file.
@@ -21,11 +23,13 @@
   - Track 1 (Unharnessed) receives NO persona and NO additional harness context.
 
 ### 3. Living Memory Ledger
+
 - Harness memory and evaluation history are recorded dynamically in `harness/output/LIVING_MEMORY.md`.
 - In a fresh comparison run, the previous living memory is wiped clean before starting.
 - Living memory is rendered live in the Workbench UI feed and can be inspected in the markdown output directory.
 
 ### 4. Code Standards & UK English
-- Use English UK spelling throughout (`behaviour`, `initialised`, `synchronise`, `colour`).
+
+- Use English UK spelling throughout (`behaviour`, `initialised`, `synchronise`, `colour`, `specialised`).
 - NEVER use `file:///` URI paths in markdown documentation, responses, or link references; use relative markdown paths.
 - Ensure all Python code satisfies `codespell` and `ruff check --fix .`.

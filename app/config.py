@@ -71,3 +71,30 @@ def load_harness_skills() -> dict[str, str]:
     return skills
 
 
+def load_harness_skill_catalog() -> dict[str, dict[str, str]]:
+    """Dynamically build a catalog of available skills (name, title, description) from SKILL.md frontmatter."""
+    catalog: dict[str, dict[str, str]] = {}
+    for skill_id, raw_md in load_harness_skills().items():
+        description = ""
+        title = skill_id.replace("-", " ").title()
+        lines = raw_md.splitlines()
+        in_frontmatter = False
+        for idx, line in enumerate(lines):
+            stripped = line.strip()
+            if idx == 0 and stripped == "---":
+                in_frontmatter = True
+                continue
+            if in_frontmatter:
+                if stripped == "---":
+                    in_frontmatter = False
+                    continue
+                if stripped.startswith("description:"):
+                    description = stripped.split(":", 1)[1].strip().strip("\"'")
+            elif stripped.startswith("# "):
+                title = stripped.lstrip("# ").strip()
+                break
+        catalog[skill_id] = {
+            "name": title,
+            "description": description or f"Specialised engineering skill: {title}.",
+        }
+    return catalog
