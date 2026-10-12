@@ -11,6 +11,7 @@ requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
+    "google-adk>=1.0.0",
     "google-genai>=1.0.0",
     "rich>=13.9.0",
     "pydantic>=2.10.0",

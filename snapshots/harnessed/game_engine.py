@@ -37,7 +37,7 @@ def get_available_targets(state: dict[str, Any]) -> list[str]:
         for neighbour in STAR_MAP_GRAPH.get(sector, []):
             if neighbour not in controlled:
                 targets.add(neighbour)
-    return sorted(list(targets))
+    return sorted(targets)
 
 def can_attack_sector(state: dict[str, Any], target_sector: str) -> bool:
     """Validate that target sector is adjacent to current territory."""
