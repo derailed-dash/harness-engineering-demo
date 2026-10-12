@@ -84,14 +84,52 @@ def clean_workspace_directory(workspace: Path) -> list[str]:
 class DemoOrchestrator:
     """Manages workspace lifecycle, event streaming, and head-to-head metrics."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.unharnessed_tokens = TokenMetrics()
         self.harnessed_tokens = TokenMetrics()
         self.is_running = False
+        self.was_cancelled = False
+        self.unharnessed_task: asyncio.Task[Any] | None = None
+        self.harnessed_task: asyncio.Task[Any] | None = None
+        self._active_queue: asyncio.Queue[dict[str, Any]] | None = None
+
+    def cancel_active_run(self) -> dict[str, Any]:
+        """Cancel any currently running comparison tasks immediately."""
+        was_running = self.is_running
+        self.was_cancelled = True
+        self.is_running = False
+        cancelled_tasks: list[str] = []
+
+        if self.unharnessed_task is not None and not self.unharnessed_task.done():
+            self.unharnessed_task.cancel()
+            cancelled_tasks.append("unharnessed_task")
+        if self.harnessed_task is not None and not self.harnessed_task.done():
+            self.harnessed_task.cancel()
+            cancelled_tasks.append("harnessed_task")
+
+        # Push a cancellation sentinel onto the active SSE queue so `await queue.get()` in
+        # `stream_comparison()` unblocks immediately without waiting for task teardown.
+        if self._active_queue is not None:
+            self._active_queue.put_nowait({"_cancelled": True})
+
+        has_cancelled = was_running or bool(cancelled_tasks)
+        return {
+            "status": "cancelled",
+            "was_running": has_cancelled,
+            "cancelled_tasks": cancelled_tasks,
+            "message": (
+                "Comparison run cancelled by user."
+                if has_cancelled
+                else "No active comparison run to cancel."
+            ),
+        }
 
     def reset_workspaces(self) -> dict[str, Any]:
         """Reset workspace state, clean generated artifacts, and zero token counters."""
+        if self.is_running or self.unharnessed_task is not None or self.harnessed_task is not None:
+            self.cancel_active_run()
         self.is_running = False
+        self.was_cancelled = False
         self.unharnessed_tokens = TokenMetrics()
         self.harnessed_tokens = TokenMetrics()
         cleaned_unharnessed = clean_workspace_directory(UNHARNESSED_DIR)
@@ -107,11 +145,11 @@ class DemoOrchestrator:
             "total_cleaned": len(cleaned_unharnessed) + len(cleaned_harnessed),
         }
 
-
     async def stream_comparison(self) -> AsyncGenerator[dict[str, Any], None]:
         """Stream concurrent parallel comparison events from both pipelines."""
-        self.is_running = True
         self.reset_workspaces()
+        self.is_running = True
+        self.was_cancelled = False
 
         recorded_events: list[dict[str, Any]] = []
         loop = asyncio.get_running_loop()
@@ -127,8 +165,9 @@ class DemoOrchestrator:
         yield init_evt
 
         queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
+        self._active_queue = queue
 
-        async def worker_unharnessed():
+        async def worker_unharnessed() -> None:
             try:
                 await queue.put({
                     "type": "unharnessed_start",
@@ -141,15 +180,18 @@ class DemoOrchestrator:
                         "metrics": self.unharnessed_tokens.to_dict(),
                     })
                     await asyncio.sleep(0.08)
+            except asyncio.CancelledError:
+                logger.info("Unharnessed worker task cancelled.")
+                raise
             except Exception as e:
-                await queue.put({
+                queue.put_nowait({
                     "type": "unharnessed_event",
                     "data": {"stage": "error", "message": f"Unharnessed error: {e}"},
                 })
             finally:
-                await queue.put({"_done": "unharnessed"})
+                queue.put_nowait({"_done": "unharnessed"})
 
-        async def worker_harnessed():
+        async def worker_harnessed() -> None:
             try:
                 await queue.put({
                     "type": "harnessed_start",
@@ -162,64 +204,79 @@ class DemoOrchestrator:
                         "metrics": self.harnessed_tokens.to_dict(),
                     })
                     await asyncio.sleep(0.08)
+            except asyncio.CancelledError:
+                logger.info("Harnessed worker task cancelled.")
+                raise
             except Exception as e:
-                await queue.put({
+                queue.put_nowait({
                     "type": "harnessed_event",
                     "data": {"stage": "error", "message": f"Harnessed error: {e}"},
                 })
             finally:
-                await queue.put({"_done": "harnessed"})
+                queue.put_nowait({"_done": "harnessed"})
 
         start_time_all = loop.time()
-        task_u = asyncio.create_task(worker_unharnessed())
-        task_h = asyncio.create_task(worker_harnessed())
+        unharnessed_task = asyncio.create_task(worker_unharnessed())
+        harnessed_task = asyncio.create_task(worker_harnessed())
+        self.unharnessed_task = unharnessed_task
+        self.harnessed_task = harnessed_task
 
-        done_workers = 0
-        while done_workers < 2:
-            item = await queue.get()
-            if "_done" in item:
-                done_workers += 1
-            else:
-                now = loop.time()
-                elapsed_ms = int((now - last_event_time) * 1000)
-                last_event_time = now
-                delay_ms = max(80, min(elapsed_ms, 1200))
+        try:
+            done_workers = 0
+            while done_workers < 2:
+                item = await queue.get()
+                if item.get("_cancelled") or self.was_cancelled:
+                    break
+                if "_done" in item:
+                    done_workers += 1
+                else:
+                    now = loop.time()
+                    elapsed_ms = int((now - last_event_time) * 1000)
+                    last_event_time = now
+                    delay_ms = max(80, min(elapsed_ms, 1200))
 
-                rec_item = dict(item)
-                rec_item["delay_ms"] = delay_ms
-                recorded_events.append(rec_item)
-                yield item
+                    rec_item = dict(item)
+                    rec_item["delay_ms"] = delay_ms
+                    recorded_events.append(rec_item)
+                    yield item
 
-        await task_u
-        await task_h
+            if not self.was_cancelled:
+                await asyncio.gather(unharnessed_task, harnessed_task, return_exceptions=True)
 
-        elapsed_total = loop.time() - start_time_all
-        total_sec = round(elapsed_total, 1)
-        mins = int(total_sec // 60)
-        secs = int(total_sec % 60)
-        formatted_total = f"{mins}:{secs:02d}"
+                elapsed_total = loop.time() - start_time_all
+                total_sec = round(elapsed_total, 1)
+                mins = int(total_sec // 60)
+                secs = int(total_sec % 60)
+                formatted_total = f"{mins}:{secs:02d}"
 
-        # Stream Final Summary
-        summary_evt: dict[str, Any] = {
-            "type": "comparison_summary",
-            "unharnessed": {
-                "tokens": self.unharnessed_tokens.to_dict(),
-            },
-            "harnessed": {
-                "tokens": self.harnessed_tokens.to_dict(),
-            },
-            "total_duration_seconds": total_sec,
-            "total_formatted_duration": formatted_total,
-            "message": "Parallel comparison complete. Vibe coding finished with flaws; Harness self-healed to verified quality (100% Pass Rate).",
-        }
-        rec_summary = dict(summary_evt)
-        rec_summary["delay_ms"] = 500
-        recorded_events.append(rec_summary)
-        yield summary_evt
+                # Stream Final Summary
+                summary_evt: dict[str, Any] = {
+                    "type": "comparison_summary",
+                    "unharnessed": {
+                        "tokens": self.unharnessed_tokens.to_dict(),
+                    },
+                    "harnessed": {
+                        "tokens": self.harnessed_tokens.to_dict(),
+                    },
+                    "total_duration_seconds": total_sec,
+                    "total_formatted_duration": formatted_total,
+                    "message": "Parallel comparison complete. Vibe coding finished with flaws; Harness self-healed to verified quality (100% Pass Rate).",
+                }
+                rec_summary = dict(summary_evt)
+                rec_summary["delay_ms"] = 500
+                recorded_events.append(rec_summary)
+                yield summary_evt
 
-        # Persist this authentic run and its candidate files as the new presentation replay
-        if len(recorded_events) >= 6:
-            save_replay_recording(recorded_events, UNHARNESSED_DIR, HARNESSED_DIR)
+                # Persist this authentic run and its candidate files as the new presentation replay
+                if len(recorded_events) >= 6:
+                    save_replay_recording(recorded_events, UNHARNESSED_DIR, HARNESSED_DIR)
+        finally:
+            for task in (unharnessed_task, harnessed_task):
+                if not task.done():
+                    task.cancel()
+            self.unharnessed_task = None
+            self.harnessed_task = None
+            self._active_queue = None
+            self.is_running = False
 
-        self.is_running = False
 

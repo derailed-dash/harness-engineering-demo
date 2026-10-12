@@ -202,3 +202,113 @@ def test_living_memory_persistence_reset_and_ui() -> None:
     restore_replay_workspaces()
 
 
+def test_workbench_kill_run_toggle_ui_and_assets() -> None:
+    """Verify Run Comparison <-> Kill Run toggle button markup, JS controller, and CSS styles."""
+    from app.config import BASE_DIR
+
+    client = TestClient(app)
+    res_html = client.get("/")
+    assert res_html.status_code == 200
+    html = res_html.text
+
+    # Header buttons must have explicit IDs for toggling and disabling
+    assert 'id="btn-compare"' in html
+    assert 'id="btn-replay"' in html
+    assert 'id="btn-reset"' in html
+
+    # Workbench JS must implement Kill Run toggle, SSE abort, and /api/cancel call
+    js_path = BASE_DIR / "app" / "static" / "js" / "workbench.js"
+    js_content = js_path.read_text(encoding="utf-8")
+    assert "setComparisonRunningState" in js_content
+    assert "killComparisonRun" in js_content
+    assert "Kill Run" in js_content
+    assert "Comparison Run Killed by User" in js_content
+    assert "activeEventSource.close()" in js_content
+    assert "activeEventSource = null" in js_content
+    assert "stopTimer()" in js_content
+    assert "fetch('/api/cancel'" in js_content
+
+    # Workbench CSS must define danger/kill visual classes and disabled states
+    css_path = BASE_DIR / "app" / "static" / "css" / "workbench.css"
+    css_content = css_path.read_text(encoding="utf-8")
+    assert ".btn-kill" in css_content
+    assert ".is-running" in css_content
+    assert "button:disabled" in css_content
+
+
+def test_api_cancel_endpoint_and_orchestrator_cancellation(monkeypatch) -> None:
+    """Verify POST /api/cancel and SSE disconnect cleanly cancel running orchestrator tasks."""
+    import asyncio
+    from pathlib import Path
+    from typing import Any, AsyncGenerator
+
+    from app.main import orchestrator
+    from app.replay.player import restore_replay_workspaces
+
+    client = TestClient(app)
+
+    # 1. Calling /api/cancel when idle returns cancelled status with was_running=False
+    idle_res = client.post("/api/cancel")
+    assert idle_res.status_code == 200
+    idle_data = idle_res.json()
+    assert idle_data["status"] == "cancelled"
+    assert idle_data["was_running"] is False
+
+    # 2. Simulate long-running pipelines to verify task cancellation on /api/cancel and SSE disconnect
+    async def slow_unharnessed(_workspace: Path, _tokens: Any) -> AsyncGenerator[dict[str, Any], None]:
+        yield {"stage": "starting", "message": "Unharnessed started"}
+        await asyncio.sleep(60)
+
+    async def slow_harnessed(_workspace: Path, _tokens: Any) -> AsyncGenerator[dict[str, Any], None]:
+        yield {"stage": "starting", "message": "Harnessed started"}
+        await asyncio.sleep(60)
+
+    monkeypatch.setattr("app.orchestrator.run_unharnessed_pipeline", slow_unharnessed)
+    monkeypatch.setattr("app.orchestrator.run_harnessed_pipeline", slow_harnessed)
+
+    async def verify_cancel_and_disconnect() -> None:
+        # Case A: Explicit cancel via POST /api/cancel while stream_comparison is active
+        gen = orchestrator.stream_comparison()
+        first_evt = await anext(gen)
+        assert first_evt["type"] == "init"
+        second_evt = await anext(gen)
+        assert second_evt["type"] in {"unharnessed_start", "harnessed_start"}
+        assert orchestrator.is_running is True
+        task_u = orchestrator.unharnessed_task
+        task_h = orchestrator.harnessed_task
+        assert task_u is not None and not task_u.done()
+        assert task_h is not None and not task_h.done()
+
+        cancel_res = client.post("/api/cancel")
+        assert cancel_res.status_code == 200
+        cancel_payload = cancel_res.json()
+        assert cancel_payload["status"] == "cancelled"
+        assert cancel_payload["was_running"] is True
+        assert "unharnessed_task" in cancel_payload["cancelled_tasks"]
+        assert "harnessed_task" in cancel_payload["cancelled_tasks"]
+
+        # Drain remaining buffered items; generator should exit without comparison_summary
+        remaining = [evt async for evt in gen]
+        assert all(evt.get("type") != "comparison_summary" for evt in remaining)
+        await asyncio.sleep(0)
+        assert task_u.cancelled() or task_u.done()
+        assert task_h.cancelled() or task_h.done()
+        assert orchestrator.is_running is False
+
+        # Case B: Early SSE disconnect (aclose) cancels both worker tasks in finally block
+        gen2 = orchestrator.stream_comparison()
+        await anext(gen2)
+        await anext(gen2)
+        task_u2 = orchestrator.unharnessed_task
+        task_h2 = orchestrator.harnessed_task
+        assert task_u2 is not None and not task_u2.done()
+        assert task_h2 is not None and not task_h2.done()
+
+        await gen2.aclose()
+        await asyncio.sleep(0)
+        assert task_u2.cancelled() or task_u2.done()
+        assert task_h2.cancelled() or task_h2.done()
+        assert orchestrator.is_running is False
+
+    asyncio.run(verify_cancel_and_disconnect())
+    restore_replay_workspaces()

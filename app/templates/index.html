@@ -31,13 +31,13 @@
                 <span style="font-size:0.8rem; color:var(--accent-green); background:rgba(0,255,136,0.08); padding:6px 12px; border-radius:6px; border:1px solid rgba(0,255,136,0.3);">
                     <i class="fa-solid fa-shield-halved"></i> Auth: <strong>{{ auth_mode }}</strong>
                 </span>
-                <button class="btn-primary" onclick="startStream('/api/stream/compare')" title="Run live comparison against Gemini model">
+                <button id="btn-compare" class="btn-primary" onclick="startStream('/api/stream/compare')" title="Run live comparison against Gemini model">
                     <i class="fa-solid fa-play"></i> Run Comparison
                 </button>
-                <button class="btn-secondary" onclick="startStream('/api/stream/replay')" title="Instant zero-latency presentation replay">
+                <button id="btn-replay" class="btn-secondary" onclick="startStream('/api/stream/replay')" title="Instant zero-latency presentation replay">
                     <i class="fa-solid fa-bolt"></i> Presentation Replay
                 </button>
-                <button class="btn-secondary" onclick="resetUI()" title="Reset workspaces and UI state">
+                <button id="btn-reset" class="btn-secondary" onclick="resetUI()" title="Reset workspaces and UI state">
                     <i class="fa-solid fa-rotate-left"></i> Reset
                 </button>
 

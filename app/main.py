@@ -149,15 +149,28 @@ def get_skill(skill_name: str) -> dict[str, Any]:
     }
 
 
-@app.get("/api/stream/compare")
+@app.post("/api/cancel")
+def cancel_comparison() -> dict[str, Any]:
+    """Cancel any active comparison run and terminate background worker tasks."""
+    return orchestrator.cancel_active_run()
 
-async def stream_live_compare():
+
+@app.get("/api/stream/compare")
+async def stream_live_compare(request: Request) -> StreamingResponse:
     """SSE endpoint for live model execution."""
     async def event_generator():
-        async for event in orchestrator.stream_comparison():
-            payload = json.dumps(event)
-            yield f"data: {payload}\n\n"
-        yield "data: [DONE]\n\n"
+        try:
+            async for event in orchestrator.stream_comparison():
+                if await request.is_disconnected():
+                    orchestrator.cancel_active_run()
+                    break
+                payload = json.dumps(event)
+                yield f"data: {payload}\n\n"
+            if not orchestrator.was_cancelled:
+                yield "data: [DONE]\n\n"
+        finally:
+            if orchestrator.is_running:
+                orchestrator.cancel_active_run()
 
     return StreamingResponse(
         event_generator(),
