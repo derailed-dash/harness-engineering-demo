@@ -8,33 +8,10 @@
 
 To avoid confusion when reading this codebase, always distinguish between **Layer 1** and **Layer 2**:
 
-```
-+===================================================================================+
-| LAYER 1: THE HARNESS WORKBENCH (The Test Rig / Wind Tunnel)                       |
-| Location: app/, golden_tests/, specs/, Makefile, Dockerfile                       |
-|                                                                                   |
-|  * Orchestrator (ADK & SSE Event Streaming)                                      |
-|  * Two-Tier Rubric Engine (Mechanical Linters + Semantic LLM Judge)              |
-|  * Golden Acceptance Tests (Independent verification suite)                      |
-|  * Interactive Presentation UI (Live side-by-side comparison & token gauges)      |
-+=========================================+=========================================+
-                                          |
-                        Runs & Evaluates  |  Generates On-Demand
-                                          v
-+=========================================+=========================================+
-| LAYER 2: THE GENERATED APPLICATION (The Workload / Model Racecar)                 |
-| Location: workspaces/unharnessed/  AND  workspaces/harnessed/                     |
-|                                                                                   |
-|  * The Generated Space Game: "Cosmic Trivia & Strategy Conquest"                 |
-|  * Domain Logic:   game_engine.py  (Star map adjacency graph & combat rules)      |
-|  * Trivia API:     trivia_service.py (Real Sci-Fi movie challenges)               |
-|  * HTTP Backend:   main.py (FastAPI REST service mounted at /preview/*)          |
-|  * Unit Tests:     tests/test_game.py (TDD test suite authored by Harnessed agent)|
-|  * Visual Client:  static/index.html (Interactive star map canvas & modal)       |
-+===================================================================================+
-```
+![The Two Layers: Harness Workbench vs. Generated Application](media/arch_two_layers.png)
 
 ### The Wind Tunnel Analogy
+
 * **Layer 1 is the Wind Tunnel**: It never gets deployed into production as an end-user game. It exists to measure, stress-test, evaluate, and compare how different agent architectures build software.
 * **Layer 2 is the Race Car**: It is the software being built inside the wind tunnel. You can interact with it and play it inside the **Arcade Preview Drawer** at the bottom of the workbench.
 
@@ -60,7 +37,7 @@ To avoid confusion when reading this codebase, always distinguish between **Laye
 | `specs/cosmic_conquest_spec.md` | **Layer 1** | The canonical goal specification prompt provided to both agents. |
 | `harness/harness_context.md` | **Layer 1** | Reusable engineering context, persona, and tool protocol (`GEMINI.md` rules) injected exclusively into the Harnessed track. |
 | `golden_tests/` | **Layer 1** | Independent 38-test acceptance suite validating both candidate workspaces and the ADK agent harness architecture. |
-| `.github/workflows/` | **Layer 1** | Automated Gemini PR code review (`gemini-review.yml`) and issue triage (`gemini-triage.yml`) GitHub Actions. |
+| `.github/workflows/` | **Layer 1** | Automated PR quality & golden test suite (`pr-checks.yml`), Gemini PR code review (`gemini-review.yml`), and issue triage (`gemini-triage.yml`) GitHub Actions. |
 | `scripts/deploy.sh` | **Layer 1** | Deployment automation script for Google Cloud Run with dynamic root path resolution. |
 | `media/` | **Layer 1** | Visual presentation assets and empirical benchmark run screenshots. |
 | `workspaces/unharnessed/` | **Layer 2** | Ephemeral directory containing the unharnessed code generated in a single open-loop pass. |
@@ -96,6 +73,21 @@ Both comparison tracks are implemented using the **Google Agent Development Kit 
 | **Session-Scoped `FunctionTool`s** | [`app/agents/tools.py`](app/agents/tools.py) defines `HARNESS_TOOLS` using ADK `ToolContext`. | Every tool reads `tool_context.state["workspace_dir"]` and appends structured audit entries to `tool_context.state["tool_trace"]`, preventing global mutable state across concurrent runs. |
 | **Custom `BaseAgent` Rubric Gate** | `RubricEvaluationGateAgent(BaseAgent)` in [`app/agents/harnessed.py`](app/agents/harnessed.py) runs the two-tier evaluator after each builder turn. | Yields an ADK `Event` with `EventActions(escalate=should_stop, state_delta=state_delta)`. Setting `escalate=True` cleanly terminates the parent `LoopAgent` the moment the 14.0 / 14.0 gate is satisfied; otherwise `state_delta` persists updated `living_memory` for the next turn. |
 | **`LoopAgent` vs ADK 2.0 `Workflow` Graph** | Uses `LoopAgent` composing `LlmAgent` + `BaseAgent` (with `DeprecationWarning` suppressed). | In `google-adk` 2.x, `LlmAgent` nodes inside a `Workflow` graph require `output_schema` for conditional routing, which disables tool calling (`HARNESS_TOOLS`). `LoopAgent` + `BaseAgent(escalate=True)` preserves full multi-turn `FunctionTool` execution inside each builder iteration. |
+| **Disabled Hidden Thinking Tokens** | `ThinkingConfig(thinking_budget=0)` on both tracks and the semantic judge ([`semantic.py`](app/rubric/semantic.py)). | Prevents hidden reasoning budgets from confounding token telemetry and ensures Track 2's quality advantage stems strictly from externalised harness engineering (TDD, skills, rubric feedback) rather than internal chain-of-thought compute. |
+| **Cooperative Live Run Cancellation** | `POST /api/cancel` and `orchestrator.was_cancelled` in [`app/orchestrator.py`](app/orchestrator.py) & [`app/main.py`](app/main.py). | When the user clicks **"Kill Run"**, the orchestrator cancels both background `asyncio.Task`s and exits the SSE generator loop deterministically without relying on per-event socket polling. |
+
+---
+
+### 2.3 Reusing the ADK Loop Harness in External Projects
+
+The ADK harness in [`app/agents/`](app/agents/) is intentionally designed so that it can be lifted directly into other software projects with minimal changes:
+
+1. **100% Portable Tooling ([`app/agents/tools.py`](app/agents/tools.py))**:
+   None of the five `FunctionTool`s (`activate_skill`, `write_workspace_file`, `read_workspace_file`, `run_pytest`, `run_ruff_check`) reference the Cosmic Conquest domain. They enforce path-traversal and directory-overwrite guards and operate exclusively on `tool_context.state["workspace_dir"]`, `tool_context.state["available_skills"]`, and `tool_context.state["tool_trace"]`.
+2. **Portable Loop & Gate Orchestration ([`app/agents/harnessed.py`](app/agents/harnessed.py))**:
+   `build_harness_instruction`, `create_builder_agent`, `RubricEvaluationGateAgent`, and `create_harness_loop_agent` form a generic self-healing loop. Only the demo-specific offline snapshot fallback (`app/agents/baselines.py`) is tied to this workbench.
+3. **Pluggable Evaluation Gate ([`app/rubric/evaluator.py`](app/rubric/evaluator.py))**:
+   Tier 1 mechanical checks 1.1–1.5 (`pytest`, `ruff`, PEP 585 AST inspection, input safety, and tool trajectory) apply to any Python repository out of the box. To adapt the harness to a new domain, replace the domain-specific checks (1.6–1.8 and Tier 2 semantic prompts) with your project's own acceptance checks and pass your specification file into `Runner.run_async()`.
 
 ---
 
@@ -103,43 +95,13 @@ Both comparison tracks are implemented using the **Google Agent Development Kit 
 
 The rubric implementation lives in [`app/rubric/`](app/rubric/) and reflects the exact recommendations from **Part 2 ("Loop Engineering in the Harness")** of the blog trilogy:
 
-```mermaid
-flowchart TD
-    CandidateCode["Candidate Workspace (workspaces/harnessed)"] --> Evaluator["app/rubric/evaluator.py"]
-    
-    subgraph Tier1 ["Tier 1: Mechanical Checks (app/rubric/mechanical.py)"]
-        C11["1.1 Unit Tests (pytest runner)"]
-        C12["1.2 Static Analysis (Ruff & Codespell)"]
-        C13["1.3 PEP 585 Type Hints (AST Inspector)"]
-        C14["1.4 Parameterised Inputs (AST Inspector)"]
-        C15["1.5 Tool Trajectory (Trace Inspector)"]
-        C16["1.6 Frontend UI Structure & HUD (HTML Inspector)"]
-        C17["1.7 Frontend API Wiring (Fetch Inspector)"]
-        C18["1.8 Dynamic API Contract & Topology (TestClient Boot)"]
-    end
-    
-    subgraph Tier2 ["Tier 2: Semantic Checks (app/rubric/semantic.py)"]
-        C21["2.1 Goal Fidelity (Real Sci-Fi Movies & Adjacency)"]
-        C22["2.2 Scope Discipline (Anti-Hallucination)"]
-        C23["2.3 Architectural Integrity (Decoupled boundaries)"]
-        C24["2.4 Error & Remediation Clarity (HTTP 400 on illegal moves)"]
-        C25["2.5 Design Rationale & Intent (Module docstrings)"]
-        C26["2.6 Progression Ergonomics (Single-action attack affordance)"]
-    end
-
-    Evaluator --> Tier1
-    Evaluator --> Tier2
-    Tier1 --> Scorecard["Scorecard: Total / 14.0"]
-    Tier2 --> Scorecard
-    Scorecard --> Gate{"Score >= 14.0?"}
-    Gate -- Yes --> Stop["Terminate Loop (Success: 100% Pass)"]
-    Gate -- No --> Feedback["Extract Failure Diagnostics -> Living Memory -> Next Iteration"]
-```
+![Two-Tier 14-Point Evaluation Rubric & Self-Healing Gate](media/arch_rubric_pipeline.png)
 
 > 💡 **Domain-Calibrated Rubrics (No Arbitrary 10-Point Limit):**
 > An engineering evaluation rubric is not confined to an arbitrary 10-point ceiling. In practice, rubrics are tailored to your workload's specific operational requirements — spanning 10, 12, 14, 16, or more checks. What matters is the objective, binary nature of each criterion and the non-negotiable **100% pass rate** before code can be committed.
 
 ### 3.1 Tier 1: Mechanical Checks (`app/rubric/mechanical.py`)
+
 Deterministic, fast static checks that require zero LLM tokens:
 1. **Check 1.1 (Unit Tests Passage)**:
    - Locates unit tests in `tests/` or `test_*.py`.
@@ -166,6 +128,7 @@ Deterministic, fast static checks that require zero LLM tokens:
    - **Architectural Rationale**: Static inspection alone cannot prove that a generated FastAPI service actually boots, registers routes correctly, or constructs valid state models at runtime. Dynamic contract testing exercises the candidate application in-memory, catching startup regressions, circular imports, and broken galaxy topology contracts before the application reaches production or human evaluation.
 
 ### 3.2 Tier 2: Semantic Checks (`app/rubric/semantic.py`)
+
 Evaluates architectural quality and fidelity to user intent:
 1. **Check 2.1 (Target State Completion / Goal Fidelity)**:
    - Verifies that all planetary sectors and graph adjacency rules are implemented.
@@ -185,6 +148,7 @@ Evaluates architectural quality and fidelity to user intent:
    - **Architectural Rationale**: An application may satisfy all backend API contracts and unit tests whilst remaining practically unusable for human operators due to broken UX ergonomics. Automated evaluation rubrics must evaluate operational usability and interface ergonomics to prevent agents from producing disjointed, non-functional user interfaces.
 
 ### 3.3 Living Memory & Autonomous Remediation
+
 When the candidate workspace scores less than the maximum score:
 1. `app/rubric/evaluator.py` extracts the exact failure messages from all failed checks.
 2. The orchestrator records these failure points into **living memory** (e.g. `"Living Memory: Check 1.2 failed due to unformatted imports in main.py; Check 1.7 failed because static/index.html lacks interactive fetch calls to /api/game/attack"`).
@@ -228,30 +192,10 @@ In standard Python runtimes, importing `main.py` or `game_engine.py` caches the 
 
 The workbench eliminates this issue through a four-stage isolation architecture implemented in `app/main.py`:
 
-```
-+-------------------------------------------------------------------------------+
-|                       Candidate Workspace Isolation Architecture              |
-+-------------------------------------------------------------------------------+
-|                                                                               |
-|  1. Workspace Switch Detection & Cache Purging                                |
-|     Detects switch: _current_active_preview_workspace != workspace.name       |
-|     Purges: sys.modules[_CANDIDATE_BARE_MODULES] & candidate_* keys           |
-|                                                                               |
-|  2. Scoped sys.path[0] Prepending                                             |
-|     Saves sys.path -> Prepends workspace.resolve() to index 0                 |
-|     Resolves intra-workspace imports (e.g. 'import game_engine') strictly      |
-|                                                                               |
-|  3. Synthesised Namespace & Dual Registration                                 |
-|     unique_mod_name = f"candidate_{workspace.name}_{module_name}"            |
-|     Registers both sys.modules[unique_mod_name] & sys.modules[module_name]   |
-|     Loads via importlib.util.spec_from_file_location                          |
-|                                                                               |
-|  4. Strict Cleanup in finally Block                                           |
-|     Restores original sys.path cleanly                                        |
-+-------------------------------------------------------------------------------+
-```
+![Candidate Workspace Isolation Architecture](media/arch_workspace_isolation.png)
 
 ### 5.1 Dynamic Cache Purging (`_purge_candidate_modules`)
+
 Whenever the workbench switches between candidate workspaces or resets the environment (`POST /api/reset`), `_purge_candidate_modules()` scans `sys.modules` and deletes all candidate entries:
 ```python
 _CANDIDATE_BARE_MODULES = {"main", "game_engine", "trivia_service"}
@@ -266,6 +210,7 @@ def _purge_candidate_modules() -> None:
 This guarantees that modifications written by the ADK self-healing loop or snapshot rollbacks take immediate effect without retaining stale in-memory definitions.
 
 ### 5.2 Scoped `sys.path[0]` Scoping
+
 Before creating or executing a module specification, `_get_workspace_module` captures the current `sys.path` and prepends the absolute path of the target candidate workspace to position `0`:
 ```python
 str_path = str(file_path.parent.resolve())
@@ -283,6 +228,7 @@ finally:
 This guarantees that nested imports initiated inside the candidate code (e.g. `from game_engine import Sector`) resolve strictly to the active workspace's files, shielding the Workbench host application from import hijacking.
 
 ### 5.3 Unique Namespace Synthesis (`candidate_{workspace}_{mod}`)
+
 To ensure that candidate modules maintain isolated namespace entries in Python's module registry, modules are loaded under a synthetic unique identifier:
 ```python
 unique_mod_name = f"candidate_{workspace.name}_{module_name}"
@@ -304,29 +250,10 @@ The workbench solves this via **Zero-Latency Presentation Replay** backed by pre
 
 To deliver an authentic, engaging presentation experience without forcing an audience to wait two minutes, `app/replay/player.py` streams events using an **accelerated time-lapse clock ratio** (`replay_speed_multiplier`):
 
-```
-+-------------------------------------------------------------------------------+
-|             Accelerated Time-Lapse Replay Clock Ratio Calculation             |
-+-------------------------------------------------------------------------------+
-|                                                                               |
-|  1. Sum Replay Delays:                                                        |
-|     total_replay_ms  = sum(evt.delay_ms for evt in events)                    |
-|     total_replay_sec = total_replay_ms / 1000.0  (~7.5s target playback)       |
-|                                                                               |
-|  2. Extract Authentic Live Duration:                                          |
-|     auth_total_sec   = summary_evt.total_duration_seconds  (~120.0s)          |
-|                                                                               |
-|  3. Compute Time-Lapse Ratio:                                                 |
-|     replay_speed_multiplier = round(auth_total_sec / total_replay_sec, 2)     |
-|                             = round(120.0 / 7.5, 2) = 16.0x                   |
-|                                                                               |
-|  4. Stream in SSE Initialisation Event:                                       |
-|     evt["replay_speed_multiplier"] = speed_multiplier                         |
-|     evt["total_duration_seconds"]  = auth_total_sec                           |
-+-------------------------------------------------------------------------------+
-```
+![Accelerated Time-Lapse Replay Clock Ratio Calculation](media/arch_replay_clock_scaling.png)
 
 ### 6.1 Mathematical Formulation
+
 1. **Recorded Playback Duration ($\text{total\_replay\_sec}$)**:
    The total wall-clock duration of the accelerated replay stream is the sum of all individual event sleep delays:
    $$\text{total\_replay\_sec} = \frac{\sum_{i=1}^{N} \text{delay\_ms}_i}{1000}$$
@@ -338,6 +265,7 @@ To deliver an authentic, engaging presentation experience without forcing an aud
    $$\text{replay\_speed\_multiplier} = \text{round}\left(\frac{\text{auth\_total\_sec}}{\text{total\_replay\_sec}}, 2\right) \approx 16.0\times$$
 
 ### 6.2 Frontend Clock Synchronisation
+
 When the user triggers Presentation Replay:
 1. `app/replay/player.py` emits the initial SSE event (`type: "init"`) carrying `replay_speed_multiplier` and `total_duration_seconds`.
 2. The client JavaScript (`app/static/js/workbench.js`) receives these fields:
@@ -359,20 +287,7 @@ The workbench is architected for zero-friction operation across local developmen
 
 A core architectural strength of the Google GenAI SDK (`google-genai`) integration in [`app/client_factory.py`](app/client_factory.py) is its dual-mode credentials resolution. Developers do not need to generate, manage, or expose Gemini API keys when working within the Google Cloud ecosystem.
 
-```mermaid
-flowchart TD
-    Start(["Start Client Initialisation"]) --> CheckADC{"Google Cloud ADC Available?<br/>(google.auth.default())"}
-    
-    CheckADC -- Yes --> VertexAI["Initialize genai.Client(vertexai=True)<br/>Location: 'global'<br/>Project: Auto-detected GCP Project"]
-    VertexAI --> ModeADC["Auth Mode: ADC (&lt;project_id&gt;)"]
-    
-    CheckADC -- No --> CheckKey{"GEMINI_API_KEY or<br/>GOOGLE_API_KEY set?"}
-    
-    CheckKey -- Yes --> GeminiAPI["Initialize genai.Client(api_key=...)<br/>Gemini Developer API"]
-    GeminiAPI --> ModeKey["Auth Mode: GEMINI_API_KEY"]
-    
-    CheckKey -- No --> Offline["Return (None, 'NONE')<br/>Offline Presentation Replay Mode"]
-```
+![Dual-Mode Authentication Pipeline](media/arch_auth_pipeline.png)
 
 #### Authentication Resolution Tiers
 
@@ -395,18 +310,7 @@ flowchart TD
 
 The application runs seamlessly across three execution environments:
 
-```
-+-----------------------------------------------------------------------------------+
-|                        Deployment & Runtime Topologies                            |
-+-------------------------+--------------------------------+------------------------+
-|   1. Local Host Native  |     2. Local Docker Container  |  3. Google Cloud Run   |
-+-------------------------+--------------------------------+------------------------+
-| * Command: make run     | * Command: make docker-run     | * Command: make deploy |
-| * Runtime: Python 3.13  | * Image: Python 3.13-slim + uv | * Serverless Container |
-| * Uvicorn with reload   | * Isolated filesystem sandbox  | * Single Port (8080)   |
-| * Fast dev iteration    | * Volume-mountable ADC key     | * Managed ADC Identity |
-+-------------------------+--------------------------------+------------------------+
-```
+![Deployment & Runtime Topologies](media/arch_deployment_topologies.png)
 
 1. **Local Host Native (`make run`)**:
    - Executed via `uv run uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload --reload-dir app`.
