@@ -46,22 +46,25 @@ To avoid confusion when reading this codebase, always distinguish between **Laye
 |:---|:---:|:---|
 | `app/main.py` | **Layer 1** | Primary FastAPI server hosting the Workbench UI, SSE streams, and preview proxy routes. |
 | `app/orchestrator.py` | **Layer 1** | Coordinates the side-by-side run of Unharnessed vs Harnessed pipelines. |
-| `app/agents/` | **Layer 1** | Agent runners implementing the unharnessed single-turn pipeline (`unharnessed.py`) and the harnessed multi-iteration ADK loop (`harnessed.py`). |
-| `app/client_factory.py` | **Layer 1** | Authentication provider: prioritises Google Cloud ADC (Vertex AI global), fallback to `GEMINI_API_KEY`. |
+| `app/agents/unharnessed.py` | **Layer 1** | Track 1 Unharnessed (Single Pass) ADK runner: bare `Agent(instruction="", tools=[])` executed via `Runner` and `InMemorySessionService`. |
+| `app/agents/harnessed.py` | **Layer 1** | Track 2 Harnessed Loop ADK runner: `LoopAgent` composing `create_builder_agent()` (`LlmAgent`) and `RubricEvaluationGateAgent(BaseAgent)`. |
+| `app/agents/tools.py` | **Layer 1** | Reusable ADK `FunctionTool` suite (`HARNESS_TOOLS`: `activate_skill`, `write_workspace_file`, `read_workspace_file`, `run_pytest`, `run_ruff_check`) bound to `ToolContext`. |
+| `app/agents/baselines.py` | **Layer 1** | Deterministic offline baseline workspace builders and markdown fallback extractor. |
+| `app/client_factory.py` | **Layer 1** | Authentication provider (`get_genai_client` and `get_adk_gemini_model`): prioritises Google Cloud ADC (Vertex AI global), fallback to `GEMINI_API_KEY`. |
 | `app/replay/` | **Layer 1** | Presentation player engine (`player.py`) and pre-recorded event stream (`replay_data.json`) delivering accelerated conference demonstrations. |
 | `app/rubric/` | **Layer 1** | The 14-point evaluation gate (8 mechanical checks + 6 semantic checks). |
-| `app/static/` | **Layer 1** | Frontend client assets including workbench stylesheets (CSS), real-time SSE stream handlers (JavaScript), and UI audio cues. |
+| `app/static/` | **Layer 1** | Frontend client assets including workbench stylesheets (CSS), real-time SSE stream handlers (JavaScript), and UI icons. |
 | `app/templates/` | **Layer 1** | Jinja2 HTML templates rendering the split-screen comparison workbench and interactive modal dialogues. |
 | `app/token_tracker.py` | **Layer 1** | Accumulates prompt and candidate tokens; estimates costs in US Dollars ($). |
 | `snapshots/` | **Layer 1** | Pre-recorded candidate workspaces (`snapshots/unharnessed/` and `snapshots/harnessed/`) providing instant, zero-latency candidate application states for presentation replay mode. |
 | `specs/cosmic_conquest_spec.md` | **Layer 1** | The canonical goal specification prompt provided to both agents. |
-| `harness/harness_context.md` | **Layer 1** | Reusable engineering context and guardrails (`GEMINI.md` rules) injected exclusively into the Harnessed track. |
-| `golden_tests/` | **Layer 1** | Independent acceptance test suite used to evaluate both candidate workspaces objectively. |
+| `harness/harness_context.md` | **Layer 1** | Reusable engineering context, persona, and tool protocol (`GEMINI.md` rules) injected exclusively into the Harnessed track. |
+| `golden_tests/` | **Layer 1** | Independent 38-test acceptance suite validating both candidate workspaces and the ADK agent harness architecture. |
+| `.github/workflows/` | **Layer 1** | Automated Gemini PR code review (`gemini-review.yml`) and issue triage (`gemini-triage.yml`) GitHub Actions. |
 | `scripts/deploy.sh` | **Layer 1** | Deployment automation script for Google Cloud Run with dynamic root path resolution. |
 | `media/` | **Layer 1** | Visual presentation assets and empirical benchmark run screenshots. |
-| `workspaces/unharnessed/` | **Layer 2** | Ephemeral directory containing the unharnessed code generated in a single open-loop turn. |
+| `workspaces/unharnessed/` | **Layer 2** | Ephemeral directory containing the unharnessed code generated in a single open-loop pass. |
 | `workspaces/harnessed/` | **Layer 2** | Ephemeral directory containing the verified code iteratively generated with the ADK loop. |
-
 
 ---
 
@@ -72,9 +75,27 @@ A crucial architectural principle demonstrated by this workbench is the clean de
 * **Application Goal Specification (`specs/cosmic_conquest_spec.md`)**:
   Represents an ephemeral, task-specific feature requirement (the tactical space game rules, planet adjacency graph, and REST endpoints). Both the unharnessed and harnessed pipelines receive this exact same specification.
 * **Harness Context & Guardrails (`harness/harness_context.md`)**:
-  Represents standing, reusable organisation- or team-level engineering policies (`GEMINI.md`, `AGENTS.md`, and Agent Skills). It mandates non-negotiable architectural invariants: Python 3.13, PEP 585 typing, mandatory TDD unit test suites, Pydantic input parameterisation, and module docstring intent.
+  Represents standing, reusable organisation- or team-level engineering policies (`GEMINI.md`, `AGENTS.md`, and Agent Skills). It mandates non-negotiable architectural invariants: Python 3.13, PEP 585 typing, mandatory TDD unit test suites, Pydantic input parameterisation, module docstring intent, and the ADK tool execution sequence.
 
 In production enterprise software engineering, you never pollute individual feature tickets or user stories with repetitive coding hygiene boilerplate. Engineering guardrails are maintained centrally at the organisation or team level and automatically inherited by the harness across all projects and tasks.
+
+---
+
+### 2.2 Google ADK Architecture & Reusable Loop Harness Blueprint
+
+Both comparison tracks are implemented using the **Google Agent Development Kit (`google-adk`)** so the comparison isolates the architectural impact of the **Harness** rather than differences in underlying SDK execution:
+
+![Google ADK Harness Architecture](media/adk_harness_architecture.png)
+
+#### Key ADK Architectural Decisions
+
+| Decision | Choice in Codebase | Rationale |
+|:---|:---|:---|
+| **Symmetrical SDK Foundation** | Both Track 1 ([`unharnessed.py`](app/agents/unharnessed.py)) and Track 2 ([`harnessed.py`](app/agents/harnessed.py)) execute via `google.adk.runners.Runner` and `InMemorySessionService`. | Ensures a fair scientific control: Track 1 uses a bare `Agent(instruction="", tools=[])` in a single pass, whereas Track 2 wraps a tool-equipped `LlmAgent` and custom `BaseAgent` gate inside a `LoopAgent`. |
+| **Dynamic Instruction Provider** | `build_harness_instruction(ctx: ReadonlyContext)` in [`app/agents/harnessed.py`](app/agents/harnessed.py) reads `ctx.state` on each iteration. | Keeps all persona and tool rules strictly inside [`harness/harness_context.md`](harness/harness_context.md) whilst dynamically injecting the current iteration's `living_memory` failure diagnostics into the prompt on Iterations 2+. |
+| **Session-Scoped `FunctionTool`s** | [`app/agents/tools.py`](app/agents/tools.py) defines `HARNESS_TOOLS` using ADK `ToolContext`. | Every tool reads `tool_context.state["workspace_dir"]` and appends structured audit entries to `tool_context.state["tool_trace"]`, preventing global mutable state across concurrent runs. |
+| **Custom `BaseAgent` Rubric Gate** | `RubricEvaluationGateAgent(BaseAgent)` in [`app/agents/harnessed.py`](app/agents/harnessed.py) runs the two-tier evaluator after each builder turn. | Yields an ADK `Event` with `EventActions(escalate=should_stop, state_delta=state_delta)`. Setting `escalate=True` cleanly terminates the parent `LoopAgent` the moment the 14.0 / 14.0 gate is satisfied; otherwise `state_delta` persists updated `living_memory` for the next turn. |
+| **`LoopAgent` vs ADK 2.0 `Workflow` Graph** | Uses `LoopAgent` composing `LlmAgent` + `BaseAgent` (with `DeprecationWarning` suppressed). | In `google-adk` 2.x, `LlmAgent` nodes inside a `Workflow` graph require `output_schema` for conditional routing, which disables tool calling (`HARNESS_TOOLS`). `LoopAgent` + `BaseAgent(escalate=True)` preserves full multi-turn `FunctionTool` execution inside each builder iteration. |
 
 ---
 
@@ -180,6 +201,7 @@ The entire demonstration runs within a single container on **Google Cloud Run** 
 1. **Workbench UI & Specification**:
    - `GET /`: Serves the primary split-screen comparison workbench.
    - `GET /api/spec`: Returns the raw Markdown content and title of `specs/cosmic_conquest_spec.md` to populate the in-UI Specification Viewer modal.
+   - `POST /api/cancel`: Cancels any active parallel comparison tasks (`unharnessed_task` and `harnessed_task`) when the user clicks **"Kill Run"**.
    - `POST /api/reset`: Cleans out all candidate workspace generated files (preserving structural directories and `README.md` files) and resets counters.
 
 2. **Real-time SSE Streams & Parallel Orchestration**:

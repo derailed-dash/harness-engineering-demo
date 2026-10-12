@@ -82,24 +82,29 @@ A representative head-to-head comparison run reveals a stark contrast across lat
 
 ```
 harness-engineering-demo/
+├── .github/workflows/          # Automated Gemini PR code review & issue triage GitHub Actions
 ├── app/                        # Layer 1: Core engine, orchestrator, rubric evaluation, token tracking, templates, static assets
-│   ├── agents/                 # Unharnessed single-pass and harnessed multi-iteration ADK runners
+│   ├── agents/                 # Google ADK agent pipelines and reusable harness tools
+│   │   ├── unharnessed.py      # Track 1: Unharnessed (Single Pass) bare ADK Agent & Runner
+│   │   ├── harnessed.py        # Track 2: Harnessed ADK LoopAgent, Builder LlmAgent, and RubricEvaluationGateAgent
+│   │   ├── tools.py            # Reusable ADK FunctionTools (activate_skill, write/read file, pytest, ruff)
+│   │   └── baselines.py        # Deterministic synthetic workspace builders for offline verification
 │   ├── replay/                 # Pre-recorded presentation player and replay_data.json
 │   ├── rubric/                 # Two-tier 14-point evaluation engine (mechanical & semantic checks)
 │   ├── static/                 # Frontend assets: CSS stylesheets, client JavaScript, and UI icons
 │   ├── templates/              # Jinja2 HTML templates for the split-screen workbench interface
-│   ├── client_factory.py       # Dual-mode authentication (Google Cloud ADC / Vertex AI & API key)
+│   ├── client_factory.py       # Dual-mode authentication (Google Cloud ADC / Vertex AI & API key + ADK Gemini adapter)
 │   ├── config.py               # Centralised workbench configuration and environment parsing
 │   ├── main.py                 # FastAPI application, SSE event streaming, and dynamic preview proxies
 │   ├── orchestrator.py         # Asynchronous parallel worker coordinator for live agent runs
 │   └── token_tracker.py        # Token telemetry, cost estimation ($), and metric accumulation
 ├── harness/                    # Layer 1: Harness guardrails, skills, and living memory
-│   ├── harness_context.md      # Reusable harness policies and guardrails (how to engineer it)
+│   ├── harness_context.md      # Reusable harness policies, persona, and tool protocol (how to engineer it)
 │   ├── skills/                 # Agent skills (test-driven-development, api-and-interface-design, gemini-api-dev)
 │   └── output/LIVING_MEMORY.md # Dynamic living memory ledger and failure feedback log
 ├── specs/                      # Task specifications
 │   └── cosmic_conquest_spec.md # Shared application specification (what to build)
-├── golden_tests/               # Independent 31-test acceptance suite validating candidate workspaces
+├── golden_tests/               # Independent 38-test acceptance suite validating workspaces, UI, and ADK agents
 ├── snapshots/                  # Layer 1: Version-controlled reference snapshots backing presentation replay
 │   ├── unharnessed/            # Reference unharnessed prototype snapshot (~9.0 / 14.0)
 │   └── harnessed/              # Reference verified harnessed candidate snapshot (14.0 / 14.0)
@@ -114,6 +119,20 @@ harness-engineering-demo/
 > **Note on `snapshots/` vs. `workspaces/`**:
 > * `snapshots/` is committed to git as a deterministic offline reference store. When **Presentation Replay** is triggered, `app/replay/player.py` automatically restores these snapshots into `workspaces/` so the interactive preview tabs and rubric scores are available instantly without calling live model APIs.
 > * `workspaces/` is ephemeral runtime output created dynamically during live runs (or populated from `snapshots/` during replay) and its generated contents are intentionally excluded from git tracking.
+
+---
+
+## Using the ADK Loop Harness as a Reference Blueprint
+
+Both tracks are built on the **Google Agent Development Kit (`google-adk`)**, making [`app/agents/harnessed.py`](app/agents/harnessed.py) and [`app/agents/tools.py`](app/agents/tools.py) a clean, self-contained template for building your own autonomous self-healing coding harness:
+
+1. **Track 1 — Unharnessed (Single Pass) ([`app/agents/unharnessed.py`](app/agents/unharnessed.py))**:
+   Wraps the model in a bare ADK `Agent(instruction="", tools=[])` and executes a single turn via `Runner` and `InMemorySessionService` with only `specs/cosmic_conquest_spec.md`.
+2. **Track 2 — Harnessed Loop ([`app/agents/harnessed.py`](app/agents/harnessed.py) & [`app/agents/tools.py`](app/agents/tools.py))**:
+   Composes three reusable ADK building blocks inside an ADK `LoopAgent`:
+   - **Session-Scoped `FunctionTool`s ([`app/agents/tools.py`](app/agents/tools.py))**: `activate_skill`, `write_workspace_file`, `read_workspace_file`, `run_pytest`, and `run_ruff_check` inspect `tool_context.state["workspace_dir"]` and record every tool invocation into `tool_context.state["tool_trace"]`.
+   - **Dynamic Instruction Provider (`build_harness_instruction`)**: Reads `harness/harness_context.md` from `ReadonlyContext.state` and dynamically appends the latest `living_memory` rubric diagnostics on Iteration 2+.
+   - **Deterministic + Semantic Gate (`RubricEvaluationGateAgent(BaseAgent)`)**: Evaluates the candidate workspace after each builder turn and yields `EventActions(escalate=True, state_delta=...)` when the rubric reaches 100% (or plateaus), or writes failure remediation into `state["living_memory"]` to trigger the next self-healing iteration.
 
 ---
 
