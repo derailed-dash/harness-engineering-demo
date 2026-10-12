@@ -1,0 +1,56 @@
+name: "🔎 Dazbo's Gemini Code Review"
+
+on:
+  pull_request:
+    branches:
+      - main
+    # Optional: restrict trigger paths (supports inclusions & exclusions)
+    # paths:
+    #   - 'app/**'
+    #   - 'harness/**'
+    #   - 'golden_tests/**'
+    #   - 'specs/**'
+    #   - '!harness/output/**'
+    #   - 'pyproject.toml'
+  issue_comment:
+    types: [created]
+
+jobs:
+  review:
+    # Run on internal PR updates (same repo), OR on issue comment starting with /gemini-review by repo owners/members
+    if: |
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
+      (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        startsWith(github.event.comment.body, '/gemini-review') &&
+        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+      )
+    runs-on: ubuntu-latest
+
+    concurrency:
+      group: gemini-review-${{ github.event.pull_request.number || github.event.issue.number }}
+      cancel-in-progress: true
+
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      statuses: write
+      checks: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || format('refs/pull/{0}/head', github.event.issue.number) }}
+
+      - name: Gemini Code Review
+        uses: derailed-dash/gemini-review-action@v1
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          gemini_model: 'gemini-3.8-flash'
+          persona: 'dazbo' # Options: straight, dazbo, palpatine
+          language: 'English (UK)'
+          include_comment_history: 'true'
