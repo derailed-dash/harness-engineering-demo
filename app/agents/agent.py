@@ -161,9 +161,14 @@ def materialise_builder_output_callback(callback_context: CallbackContext) -> ty
         text_chunks: list[str] = []
         for ev in reversed(inv_ctx.session.events):
             if ev.author == "harnessed_builder_agent" and ev.content and ev.content.parts:
-                for part in ev.content.parts:
-                    if part.text:
-                        text_chunks.append(part.text)
+                visible_parts = [
+                    part.text
+                    for part in ev.content.parts
+                    if part.text and not getattr(part, "thought", False)
+                ]
+                text_chunks = visible_parts or [
+                    part.text for part in ev.content.parts if part.text
+                ]
                 break
         if text_chunks:
             extracted = _extract_and_write_files("\n".join(text_chunks), workspace_path)
@@ -183,31 +188,22 @@ def create_builder_agent(
         model: ADK `Gemini` model instance or model name string.
         fast_demo_mode: When True (default for Cloud Run workbench demos), binds
             `HARNESS_TOOLS` schemas for inspection while setting `FunctionCallingConfigMode.NONE`
-            so each loop turn completes in ~10-15s via `materialise_builder_output_callback`.
+            so `materialise_builder_output_callback` handles workspace file materialisation.
             When False, enables full autonomous LLM tool calling (`activate_skill`,
             `write_workspace_file`, `read_workspace_file`, `run_pytest`, `run_ruff_check`).
     """
     gen_config = types.GenerateContentConfig(
         temperature=0.2,
         max_output_tokens=MAX_OUTPUT_TOKENS,
-        # Use LOW thinking level on Gemini 3.8 Flash so each loop iteration responds in
-        # ~8-12s rather than spending 30s+ generating thousands of internal thought tokens.
-        # Iterative reasoning is handled externally by the ADK LoopAgent + Living Memory.
+        # Use LOW thinking level on Gemini 3.8 Flash to minimise latency and cost while
+        # preserving reasoning quality; iterative verification is handled by the ADK LoopAgent.
         thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
         http_options=types.HttpOptions(
-            timeout=60_000,
+            timeout=240_000,
             retry_options=types.HttpRetryOptions(attempts=1),
         ),
     )
     if fast_demo_mode:
-        # In fast_demo_mode, materialise_builder_output_callback handles workspace files,
-        # so the Builder Agent generates an architectural/remediation plan (~512 tokens)
-        # quickly without hitting Vertex AI deadline limits.
-        gen_config.max_output_tokens = 512
-        gen_config.http_options = types.HttpOptions(
-            timeout=25_000,
-            retry_options=types.HttpRetryOptions(attempts=1),
-        )
         gen_config.tool_config = types.ToolConfig(
             function_calling_config=types.FunctionCallingConfig(
                 mode=types.FunctionCallingConfigMode.NONE

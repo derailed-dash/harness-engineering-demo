@@ -499,7 +499,10 @@ function handleStreamEvent(evt) {
             appendFeedCard('harnessed-feed', `Iteration ${data.iteration} Started`, data.message, null, true);
             reloadHarnessedPreview(false);
         } else if (data.stage === 'raw_response') {
-            appendFeedCard('harnessed-feed', 'Initial Scaffold Generated', data.message, data.response_text);
+            const cardTitle = (data.iteration && data.iteration > 1)
+                ? 'Self-Healing Remediation Generated'
+                : 'Initial Scaffold Generated';
+            appendFeedCard('harnessed-feed', cardTitle, data.message, data.response_text);
         } else if (data.tool_exec) {
             appendFeedCard('harnessed-feed', `Tool Execution: ${data.tool}`, data.message, data.output);
         } else if (data.stage === 'tool_exec') {

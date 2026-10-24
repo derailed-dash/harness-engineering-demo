@@ -361,7 +361,12 @@ async def run_harnessed_pipeline(
 
             # 3. Handle Builder Agent narrative/code response
             if event.author == "harnessed_builder_agent" and event.content and event.content.parts:
-                text_chunks = [p.text for p in event.content.parts if p.text]
+                visible_chunks = [
+                    p.text
+                    for p in event.content.parts
+                    if p.text and not getattr(p, "thought", False)
+                ]
+                text_chunks = visible_chunks or [p.text for p in event.content.parts if p.text]
                 if text_chunks:
                     combined_text = "\n".join(text_chunks).strip()
                     snippet = combined_text[:800] + ("..." if len(combined_text) > 800 else "")

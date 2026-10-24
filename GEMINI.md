@@ -44,7 +44,7 @@
   - `thinking_budget` is deprecated on Gemini 3.x+ models, and `ThinkingLevel.MINIMAL` is not supported on `gemini-3.8-flash` (returns a `400` error). Use `ThinkingLevel.LOW` (`types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW)`) to minimise latency and cost while preserving reasoning quality.
 - **WSL2 IPv4 Binding & `X-Server-Timeout`**:
   - In WSL2, bind `httpx` sync/async transports to `local_address="0.0.0.0"` with `retry_options=types.HttpRetryOptions(attempts=1)` in [`app/client_factory.py`](app/client_factory.py) to avoid IPv6 blackhole stalls and 5x `tenacity` retry loops.
-  - Remember that `google-genai` populates the `X-Server-Timeout` HTTP header from `HttpOptions.timeout`; ensure `timeout` on `unharnessed_vibe_agent` (`90_000` ms) is generous enough for a full single-pass generation so Vertex AI does not abort it at 18s with `504 DEADLINE_EXCEEDED`.
+  - Remember that `google-genai` populates the `X-Server-Timeout` HTTP header from `HttpOptions.timeout`; ensure `timeout` on `unharnessed_vibe_agent` and `_build_ipv4_http_options` (`240_000` ms / 4 minutes) is generous enough for a >2-minute single-pass generation so Vertex AI does not abort it mid-generation with `504 DEADLINE_EXCEEDED`.
 
 ### 5. Code Standards & UK English
 

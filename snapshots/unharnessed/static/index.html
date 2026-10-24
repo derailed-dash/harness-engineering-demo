@@ -1,13 +1,824 @@
 <!DOCTYPE html>
-<html>
-<head><title>Cosmic Conquest (Vibe Built)</title></head>
-<body style="background:#111; color:#eee; font-family:sans-serif; text-align:center; padding:50px;">
-    <h1>Cosmic Conquest (Vibe Built Prototype)</h1>
-    <div id="hud-shields">Shields: 100</div>
-    <div id="hud-energy">Energy: 50</div>
-    <div id="hud-sectors">Sectors: Earth</div>
-    <div id="hud-turn">Turn: 1</div>
-    <div id="combat-modal" style="display:none;">Combat Modal</div>
-    <div id="status">Status: Prototype created without engineering harness.</div>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cosmic Trivia &amp; Strategy Conquest</title>
+  <style>
+    :root {
+      --bg-space: #050813;
+      --card-bg: rgba(13, 20, 38, 0.85);
+      --card-border: rgba(0, 240, 255, 0.25);
+      --cyan-glow: #00f0ff;
+      --gold-glow: #ffd000;
+      --green-glow: #00ff88;
+      --red-glow: #ff2a55;
+      --dim-gray: #3a445d;
+      --font-cyber: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-space);
+      color: #e2e8f0;
+      font-family: var(--font-cyber);
+      overflow-x: hidden;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Ambient Space Starfield */
+    #starfield {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .app-container {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 1rem 1.5rem 2rem 1.5rem;
+      width: 100%;
+    }
+
+    /* Header & HUD */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.8rem 1.2rem;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.1);
+      margin-bottom: 1.2rem;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand h1 {
+      font-size: 1.4rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, var(--cyan-glow), #ffffff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 800;
+    }
+
+    .brand span {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      letter-spacing: 1px;
+    }
+
+    .hud-metrics {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+
+    .metric-pod {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .metric-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #94a3b8;
+    }
+
+    .metric-value {
+      font-size: 1.2rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .metric-shields { color: var(--cyan-glow); }
+    .metric-energy { color: var(--gold-glow); }
+    .metric-sectors { color: var(--green-glow); }
+    .metric-turn { color: #f8fafc; }
+
+    .btn-reset {
+      background: rgba(255, 42, 85, 0.15);
+      border: 1px solid var(--red-glow);
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: all 0.2s ease;
+    }
+
+    .btn-reset:hover {
+      background: var(--red-glow);
+      box-shadow: 0 0 15px var(--red-glow);
+    }
+
+    /* Status Banner */
+    .terminal-banner {
+      display: none;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+    .banner-victory {
+      display: block;
+      background: rgba(0, 255, 136, 0.15);
+      border: 1px solid var(--green-glow);
+      color: var(--green-glow);
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+    }
+    .banner-defeat {
+      display: block;
+      background: rgba(255, 42, 85, 0.15);
+      border: 1px solid var(--red-glow);
+      color: var(--red-glow);
+      box-shadow: 0 0 20px rgba(255, 42, 85, 0.2);
+    }
+
+    /* Star Map Canvas / SVG Area */
+    .starmap-section {
+      position: relative;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      height: 480px;
+      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    svg#starmap-svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .starmap-instruction {
+      position: absolute;
+      top: 15px;
+      left: 20px;
+      background: rgba(5, 8, 19, 0.7);
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.8rem;
+      letter-spacing: 0.5px;
+      color: #94a3b8;
+      pointer-events: none;
+    }
+
+    /* Sector Grid Cards below Star Map */
+    .sector-deck {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1rem;
+    }
+
+    .sector-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sector-card.controlled {
+      border-color: var(--cyan-glow);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.12);
+    }
+
+    .sector-card.target {
+      border-color: var(--gold-glow);
+      animation: pulse-border 1.8s infinite;
+    }
+
+    .sector-card.locked {
+      opacity: 0.5;
+      border-color: var(--dim-gray);
+    }
+
+    @keyframes pulse-border {
+      0% { box-shadow: 0 0 5px rgba(255, 208, 0, 0.2); }
+      50% { box-shadow: 0 0 20px rgba(255, 208, 0, 0.45); }
+      100% { box-shadow: 0 0 5px rgba(255, 208, 0, 0.2); }
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.5rem;
+    }
+
+    .sector-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .sector-badge {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .badge-controlled { background: rgba(0, 240, 255, 0.2); color: var(--cyan-glow); }
+    .badge-target { background: rgba(255, 208, 0, 0.2); color: var(--gold-glow); }
+    .badge-locked { background: rgba(58, 68, 93, 0.4); color: #94a3b8; }
+
+    .sector-theme {
+      font-size: 0.75rem;
+      color: #38bdf8;
+      margin-bottom: 0.4rem;
+      font-style: italic;
+    }
+
+    .sector-desc {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      line-height: 1.35;
+      margin-bottom: 1rem;
+    }
+
+    .action-btn {
+      width: 100%;
+      padding: 0.65rem;
+      border: none;
+      border-radius: 6px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-attack {
+      background: linear-gradient(90deg, #ff9900, #ffd000);
+      color: #000;
+      box-shadow: 0 0 10px rgba(255, 208, 0, 0.3);
+    }
+
+    .btn-attack:hover {
+      box-shadow: 0 0 20px rgba(255, 208, 0, 0.7);
+      transform: translateY(-1px);
+    }
+
+    .btn-disabled {
+      background: rgba(58, 68, 93, 0.4);
+      color: #64748b;
+      cursor: not-allowed;
+    }
+
+    /* Modal Combat Dialogue */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 7, 18, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-window {
+      background: #090e1d;
+      border: 1px solid var(--cyan-glow);
+      box-shadow: 0 0 35px rgba(0, 240, 255, 0.25);
+      border-radius: 14px;
+      max-width: 650px;
+      width: 100%;
+      padding: 1.8rem;
+      position: relative;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+      padding-bottom: 0.8rem;
+    }
+
+    .modal-title {
+      font-size: 1.1rem;
+      color: var(--cyan-glow);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 700;
+    }
+
+    .movie-source {
+      font-size: 0.8rem;
+      color: var(--gold-glow);
+      font-weight: 600;
+      background: rgba(255, 208, 0, 0.1);
+      padding: 3px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 208, 0, 0.3);
+    }
+
+    .trivia-question {
+      font-size: 1rem;
+      line-height: 1.5;
+      color: #f1f5f9;
+      margin-bottom: 1.4rem;
+      font-weight: 500;
+    }
+
+    .options-grid {
+      display: grid;
+      gap: 0.75rem;
+      margin-bottom: 1.4rem;
+    }
+
+    .option-btn {
+      background: rgba(13, 20, 38, 0.9);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      color: #e2e8f0;
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s;
+    }
+
+    .option-btn:hover:not(:disabled) {
+      border-color: var(--cyan-glow);
+      background: rgba(0, 240, 255, 0.15);
+      transform: translateX(4px);
+    }
+
+    .option-btn.selected-correct {
+      background: rgba(0, 255, 136, 0.2) !important;
+      border-color: var(--green-glow) !important;
+      color: #ffffff !important;
+    }
+
+    .option-btn.selected-wrong {
+      background: rgba(255, 42, 85, 0.2) !important;
+      border-color: var(--red-glow) !important;
+      color: #ffffff !important;
+    }
+
+    .combat-feedback {
+      display: none;
+      padding: 0.9rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      line-height: 1.4;
+      margin-bottom: 1.2rem;
+    }
+    .combat-feedback.show { display: block; }
+    .combat-feedback.success {
+      background: rgba(0, 255, 136, 0.12);
+      border: 1px solid var(--green-glow);
+      color: var(--green-glow);
+    }
+    .combat-feedback.failure {
+      background: rgba(255, 42, 85, 0.12);
+      border: 1px solid var(--red-glow);
+      color: var(--red-glow);
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="starfield"></canvas>
+
+  <div class="app-container">
+    <header>
+      <div class="brand">
+        <h1>Cosmic Trivia Conquest</h1>
+        <span>Sol Fleet Tactical Liberation Network</span>
+      </div>
+
+      <div class="hud-metrics">
+        <div class="metric-pod">
+          <span class="metric-label">Shield Integrity</span>
+          <span class="metric-value metric-shields" id="hud-shields">100%</span>
+        </div>
+        <div class="metric-pod">
+          <span class="metric-label">Energy Core</span>
+          <span class="metric-value metric-energy" id="hud-energy">50 GW</span>
+        </div>
+        <div class="metric-pod">
+          <span class="metric-label">Liberated Sectors</span>
+          <span class="metric-value metric-sectors" id="hud-sectors">1 / 6</span>
+        </div>
+        <div class="metric-pod">
+          <span class="metric-label">Campaign Turn</span>
+          <span class="metric-value metric-turn" id="hud-turn">0</span>
+        </div>
+        <button class="btn-reset" onclick="resetGame()">Reset Fleet</button>
+      </div>
+    </header>
+
+    <div id="terminal-banner" class="terminal-banner"></div>
+
+    <section class="starmap-section">
+      <div class="starmap-instruction">★ Tactical Map: Click any pulsing Gold target to launch assault directly.</div>
+      <svg id="starmap-svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet"></svg>
+    </section>
+
+    <section class="sector-deck" id="sector-deck"></section>
+  </div>
+
+  <!-- Combat Modal -->
+  <div class="modal-backdrop" id="combat-modal">
+    <div class="modal-window">
+      <div class="modal-header">
+        <span class="modal-title" id="combat-sector-name">Gatekeeper Encryption Breach</span>
+        <span class="movie-source" id="combat-movie-title">Movie Source</span>
+      </div>
+      <p class="trivia-question" id="combat-question">Loading cinematic frequency...</p>
+
+      <div class="options-grid" id="combat-options"></div>
+
+      <div class="combat-feedback" id="combat-feedback"></div>
+
+      <div class="modal-actions">
+        <button class="action-btn btn-attack" id="btn-modal-dismiss" style="display:none;" onclick="closeModal()">Continue Mission</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Ambient Starfield Animation ---
+    const canvas = document.getElementById("starfield");
+    const ctx = canvas.getContext("2d");
+    let stars = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initStars();
+    }
+
+    function initStars() {
+      stars = [];
+      const count = Math.floor((canvas.width * canvas.height) / 3200);
+      for (let i = 0; i < count; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          radius: Math.random() * 1.4 + 0.3,
+          speed: Math.random() * 0.2 + 0.05,
+          alpha: Math.random() * 0.7 + 0.3
+        });
+      }
+    }
+
+    function renderStarfield() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#ffffff";
+      for (const s of stars) {
+        ctx.globalAlpha = s.alpha;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+        ctx.fill();
+        s.y += s.speed;
+        if (s.y > canvas.height) s.y = 0;
+      }
+      ctx.globalAlpha = 1.0;
+      requestAnimationFrame(renderStarfield);
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+    renderStarfield();
+
+    // --- State and Interaction Layer ---
+    let localGameState = null;
+    let currentTargetSector = null;
+
+    async function fetchGameState() {
+      try {
+        const res = await fetch("/api/game/state");
+        const data = await res.json();
+        localGameState = data;
+        renderAll();
+      } catch (err) {
+        console.error("Failed to fetch state:", err);
+      }
+    }
+
+    function renderAll() {
+      if (!localGameState) return;
+
+      // Update HUD
+      document.getElementById("hud-shields").innerText = `${localGameState.shields}%`;
+      document.getElementById("hud-energy").innerText = `${localGameState.energy} GW`;
+      document.getElementById("hud-sectors").innerText = `${localGameState.controlled_sectors.length} / ${localGameState.total_sectors}`;
+      document.getElementById("hud-turn").innerText = localGameState.turn_count;
+
+      // Status Banner
+      const banner = document.getElementById("terminal-banner");
+      if (localGameState.status === "VICTORY") {
+        banner.className = "terminal-banner banner-victory";
+        banner.innerText = "★ VICTORY: All galactic sectors secured. The Gatekeeper AI has been subdued!";
+      } else if (localGameState.status === "DEFEAT") {
+        banner.className = "terminal-banner banner-defeat";
+        banner.innerText = "☠ DEFEAT: Sol Fleet shields destroyed. Humanity fell to the Gatekeeper.";
+      } else {
+        banner.className = "terminal-banner";
+        banner.innerText = "";
+      }
+
+      renderStarMap();
+      renderSectorDeck();
+    }
+
+    function renderStarMap() {
+      const svg = document.getElementById("starmap-svg");
+      svg.innerHTML = "";
+
+      const meta = localGameState.sector_metadata;
+      const graph = localGameState.adjacency_graph;
+      const controlled = new Set(localGameState.controlled_sectors);
+      const validTargets = new Set(localGameState.valid_targets);
+
+      // Render Edges
+      const drawnPairs = new Set();
+      for (const [source, neighbors] of Object.entries(graph)) {
+        for (const target of neighbors) {
+          const pairKey = [source, target].sort().join("---");
+          if (!drawnPairs.has(pairKey)) {
+            drawnPairs.add(pairKey);
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", meta[source].coords.x);
+            line.setAttribute("y1", meta[source].coords.y);
+            line.setAttribute("x2", meta[target].coords.x);
+            line.setAttribute("y2", meta[target].coords.y);
+
+            const isContested = (controlled.has(source) && validTargets.has(target)) ||
+                                (controlled.has(target) && validTargets.has(source));
+            const isSecured = controlled.has(source) && controlled.has(target);
+
+            line.setAttribute("stroke", isSecured ? "#00f0ff" : isContested ? "#ffd000" : "#222c42");
+            line.setAttribute("stroke-width", isSecured ? "3" : isContested ? "2.5" : "1.5");
+            if (isContested) {
+              line.setAttribute("stroke-dasharray", "6,4");
+            }
+            svg.appendChild(line);
+          }
+        }
+      }
+
+      // Render Sector Nodes
+      for (const [id, data] of Object.entries(meta)) {
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        g.style.cursor = validTargets.has(id) ? "pointer" : "default";
+
+        if (validTargets.has(id)) {
+          g.addEventListener("click", () => initiateAttack(id));
+        }
+
+        const isCtrl = controlled.has(id);
+        const isTarget = validTargets.has(id);
+
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", data.coords.x);
+        circle.setAttribute("cy", data.coords.y);
+        circle.setAttribute("r", isCtrl ? "26" : isTarget ? "24" : "20");
+        circle.setAttribute("fill", isCtrl ? "#092e3d" : isTarget ? "#3b2f0a" : "#0d1426");
+        circle.setAttribute("stroke", isCtrl ? "#00f0ff" : isTarget ? "#ffd000" : "#3a445d");
+        circle.setAttribute("stroke-width", isTarget ? "3" : "2");
+
+        if (isTarget) {
+          const anim = document.createElementNS("http://www.w3.org/2000/svg", "animate");
+          anim.setAttribute("attributeName", "r");
+          anim.setAttribute("values", "23;27;23");
+          anim.setAttribute("dur", "1.6s");
+          anim.setAttribute("repeatCount", "indefinite");
+          circle.appendChild(anim);
+        }
+
+        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        text.setAttribute("x", data.coords.x);
+        text.setAttribute("y", data.coords.y + 40);
+        text.setAttribute("text-anchor", "middle");
+        text.setAttribute("fill", isCtrl ? "#00f0ff" : isTarget ? "#ffd000" : "#94a3b8");
+        text.setAttribute("font-size", "12");
+        text.setAttribute("font-weight", "600");
+        text.textContent = data.name.split(" - ")[0];
+
+        g.appendChild(circle);
+        g.appendChild(text);
+        svg.appendChild(g);
+      }
+    }
+
+    function renderSectorDeck() {
+      const deck = document.getElementById("sector-deck");
+      deck.innerHTML = "";
+
+      const meta = localGameState.sector_metadata;
+      const controlled = new Set(localGameState.controlled_sectors);
+      const validTargets = new Set(localGameState.valid_targets);
+
+      for (const [id, data] of Object.entries(meta)) {
+        const isCtrl = controlled.has(id);
+        const isTarget = validTargets.has(id);
+
+        const card = document.createElement("div");
+        card.className = `sector-card ${isCtrl ? "controlled" : isTarget ? "target" : "locked"}`;
+
+        let badgeClass = "badge-locked";
+        let badgeLabel = "Locked Sector";
+        if (isCtrl) {
+          badgeClass = "badge-controlled";
+          badgeLabel = "Liberated";
+        } else if (isTarget) {
+          badgeClass = "badge-target";
+          badgeLabel = "Adjacent Target";
+        }
+
+        let buttonHtml = `<button class="action-btn btn-disabled" disabled>Unreachable</button>`;
+        if (isCtrl) {
+          buttonHtml = `<button class="action-btn btn-disabled" disabled>Sector Secured</button>`;
+        } else if (isTarget && localGameState.status === "IN_PROGRESS") {
+          buttonHtml = `<button class="action-btn btn-attack" onclick="initiateAttack('${id}')">Assault Sector</button>`;
+        }
+
+        card.innerHTML = `
+          <div>
+            <div class="card-top">
+              <span class="sector-title">${data.name}</span>
+              <span class="sector-badge ${badgeClass}">${badgeLabel}</span>
+            </div>
+            <div class="sector-theme">Grounding: ${data.theme}</div>
+            <div class="sector-desc">${data.description}</div>
+          </div>
+          <div>${buttonHtml}</div>
+        `;
+        deck.appendChild(card);
+      }
+    }
+
+    async function initiateAttack(sectorId) {
+      if (!localGameState.valid_targets.includes(sectorId)) return;
+      currentTargetSector = sectorId;
+
+      try {
+        const res = await fetch("/api/game/attack", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ target_sector: sectorId })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          alert(err.detail || "Attack initiation failed.");
+          return;
+        }
+
+        const challenge = await res.json();
+        openModal(challenge);
+      } catch (err) {
+        console.error("Combat assault failed:", err);
+      }
+    }
+
+    function openModal(challenge) {
+      const meta = localGameState.sector_metadata[currentTargetSector];
+      document.getElementById("combat-sector-name").innerText = `Assault on ${meta.name}`;
+      document.getElementById("combat-movie-title").innerText = challenge.movie_title;
+      document.getElementById("combat-question").innerText = challenge.question;
+
+      const optsContainer = document.getElementById("combat-options");
+      optsContainer.innerHTML = "";
+
+      const feedback = document.getElementById("combat-feedback");
+      feedback.className = "combat-feedback";
+      feedback.innerText = "";
+
+      document.getElementById("btn-modal-dismiss").style.display = "none";
+
+      challenge.options.forEach((optText, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "option-btn";
+        btn.innerHTML = `<strong>${String.fromCharCode(65 + idx)}.</strong> ${optText}`;
+        btn.onclick = () => submitAnswer(idx, btn);
+        optsContainer.appendChild(btn);
+      });
+
+      document.getElementById("combat-modal").classList.add("open");
+    }
+
+    async function submitAnswer(chosenIndex, selectedButton) {
+      // Disable all option buttons immediately
+      const allButtons = document.querySelectorAll(".option-btn");
+      allButtons.forEach(b => b.disabled = true);
+
+      try {
+        const res = await fetch("/api/game/answer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            target_sector: currentTargetSector,
+            chosen_index: chosenIndex
+          })
+        });
+
+        const data = await res.json();
+        const feedback = document.getElementById("combat-feedback");
+
+        allButtons[data.correct_index].classList.add("selected-correct");
+        if (!data.correct) {
+          selectedButton.classList.add("selected-wrong");
+          feedback.className = "combat-feedback failure show";
+          feedback.innerHTML = `<strong>Cyber-Defense Repudiation:</strong> ${data.explanation}`;
+        } else {
+          feedback.className = "combat-feedback success show";
+          feedback.innerHTML = `<strong>Invasion Successful:</strong> ${data.explanation}`;
+        }
+
+        localGameState = data.game_state;
+        renderAll();
+        document.getElementById("btn-modal-dismiss").style.display = "inline-block";
+      } catch (err) {
+        console.error("Error submitting answer:", err);
+      }
+    }
+
+    function closeModal() {
+      document.getElementById("combat-modal").classList.remove("open");
+      currentTargetSector = null;
+    }
+
+    async function resetGame() {
+      if (!confirm("Re-initialize the Sol Fleet expedition back to Earth Capital?")) return;
+      try {
+        const res = await fetch("/api/game/reset", { method: "POST" });
+        const data = await res.json();
+        localGameState = data.game_state;
+        closeModal();
+        renderAll();
+      } catch (err) {
+        console.error("Reset failed:", err);
+      }
+    }
+
+    // Initialize state on launch
+    fetchGameState();
+  </script>
 </body>
 </html>

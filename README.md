@@ -43,28 +43,28 @@ TL;DR - we should not pollute individual feature tickets or prompts with repetit
 
 A representative head-to-head comparison run reveals a stark contrast across latency, token consumption, total cost, and functional correctness:
 
-![Results Metrics and Comparison Summary](media/results-metrics.png)
+![Results Metrics and Comparison Summary](media/sbs-result.png)
 
 | Metric | Unharnessed Track (Vibe Coding) | Harnessed Track (Loop Engineering) | Operational Advantage |
 |:---|:---|:---|:---|
-| **Execution Duration** | **2m 16s** (136 seconds) | **0m 32s** (32 seconds) | **4.25x faster** |
-| **Combined Tokens** | 45,571 tokens | 24,287 tokens | **46.7% fewer tokens** |
-| **Estimated Cost** | $0.0168 | $0.0067 | **60.1% cheaper** |
-| **Rubric Score** | **9.0 / 14.0** (Failed) | **14.0 / 14.0** (Passed) | **100% gate pass** |
+| **Execution Duration** | **1m 31s – 2m 16s** (typically 1.5–2+ mins) | **0m 30s – 0m 35s** (2 iterations) | **3–4x faster** |
+| **Combined Tokens** | **26,106 – 45,571 tokens** (`11,079 in / 15,027 out`) | **~6,620 tokens** (`5,604 in / 1,016 out`) | **~75–85% fewer tokens** |
+| **Estimated Cost** | **$0.0107 – $0.0168** | **~$0.0015** | **~85% cheaper (~7x lower cost)** |
+| **Rubric Score** | **6.0 – 11.0 / 14.0** (Always fails) | **14.0 / 14.0** (Always passes) | **100% gate pass** |
 | **Functional Outcome** | ❌ Broken / Non-functional | ✅ Fully playable & verified | **Only harnessed code works** |
 
 ### Why the Harnessed Track Outperforms Vibe Coding
 
 1. **Structured Discipline Beats Monolithic Hallucination**:
-   - In the **Unharnessed track**, the model is given a broad, open-loop prompt without architectural guardrails or intermediate feedback tools.
-   - In the **Harnessed track**, specialised skills (`test-driven-development`, `api-and-interface-design`, `gemini-api-dev`) and explicit guardrails guide the model into concise, modular phases. It writes unit tests first, implements only what is required.
+   - In the **Unharnessed track**, the model is given a broad, open-loop prompt without architectural guardrails or intermediate feedback tools, causing it to stream 15,000+ output tokens in a single unverified burst.
+   - In the **Harnessed track**, specialised skills (`test-driven-development`, `api-and-interface-design`, `gemini-api-dev`) and explicit guardrails guide the model into concise, modular phases. It writes unit tests first and implements only what is required.
 
-2. **Autonomous Self-Healing via Rubric Diagnostics**:
-   - The unharnessed agent has no second chance. In reality, a human would need to then address and fix all the issues.
-   - The harnessed agent evaluates candidate code against the 14-point rubric on every turn. Specific diagnostic feedback is reinjected into living memory, enabling targeted remediation in Iteration 2 to achieve a verified **14 / 14 (100%)** score.
+2. **Autonomous Self-Healing via Distilled Living Memory Receipts**:
+   - The unharnessed agent has no second chance. In reality, a human would need to step in to diagnose and fix all the broken contracts.
+   - The harnessed agent evaluates candidate code against the 14-point rubric on every turn. A structured **Iteration Evidence Receipt** (Score Delta, `pytest`/`ruff` Verification Receipt, Active Failures, and Next-Turn Remediation Targets) is persisted to [`harness/output/LIVING_MEMORY.md`](harness/output/LIVING_MEMORY.md) and reinjected into the next turn to achieve a verified **14 / 14 (100%)** score.
 
-3. **Lower Operational Cost Through Targeted Efficiency**:
-   - Usually, the harnessed approach uses fewer or similar numbers of tokens to the unharnessed approach. Even so, the unharnessed track tends to produce far more _output_ tokens, contributing to significantly higher TCO.
+3. **Dramatically Lower Operational Cost (~6.6K Tokens) via Context Pruning & `ThinkingLevel.LOW`**:
+   - By configuring `include_contents="none"` on `harnessed_builder_agent` and `ThinkingLevel.LOW` on `gemini-3.8-flash`, Iteration 2 prunes the raw Iteration 1 conversation history and receives only the standing guardrails plus the distilled `LIVING_MEMORY.md` receipt — keeping the entire 2-iteration self-healing run to **~6,600 tokens (~$0.0015)** compared to **26,000+ tokens (~$0.0107+)** for the unharnessed single pass.
 
 4. **Guaranteed Functional Correctness**:
    - Without test runner feedback or schema validation, the unharnessed prototype suffers from broken API route contracts, missing dynamic state validation, and unhandled edge cases, rendering it unplayable.

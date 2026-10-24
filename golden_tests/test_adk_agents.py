@@ -42,7 +42,7 @@ from app.agents.tools import (
     write_workspace_file,
 )
 from app.agents.unharnessed import create_unharnessed_agent
-from app.config import DEFAULT_MODEL, load_harness_context
+from app.config import DEFAULT_MODEL, MAX_OUTPUT_TOKENS, load_harness_context
 
 
 class _StubToolContext:
@@ -78,6 +78,8 @@ def test_harnessed_loop_agent_structure() -> None:
     assert len(builder.tools) == len(HARNESS_TOOLS)
     assert builder.after_agent_callback is materialise_builder_output_callback
     assert builder.include_contents == "none"
+    assert builder.generate_content_config is not None
+    assert builder.generate_content_config.max_output_tokens == MAX_OUTPUT_TOKENS
 
     assert isinstance(gate, RubricEvaluationGateAgent)
     assert isinstance(gate, BaseAgent)

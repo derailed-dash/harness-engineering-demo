@@ -14,9 +14,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load .env if present
 load_dotenv(BASE_DIR / ".env")
 
-# Model configuration
+# Model & Vertex AI endpoint configuration
 DEFAULT_MODEL = "gemini-3.8-flash"
 MODEL_NAME = os.getenv("MODEL_NAME", DEFAULT_MODEL)
+GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("GCP_PROJECT") or ""
+DEFAULT_LOCATION = "global"
+GOOGLE_CLOUD_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", DEFAULT_LOCATION)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 # Default output token limit on gemini-3.8-flash via google-genai SDK is 65,536 (64K).
 MAX_OUTPUT_TOKENS = int(os.getenv("MAX_OUTPUT_TOKENS", "65536"))

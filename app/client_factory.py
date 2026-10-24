@@ -16,7 +16,14 @@ from google import genai
 from google.adk.models import Gemini
 from google.genai import types
 
-from app.config import DEFAULT_MODEL, GEMINI_API_KEY, MODEL_NAME
+from app.config import (
+    DEFAULT_LOCATION,
+    DEFAULT_MODEL,
+    GEMINI_API_KEY,
+    GOOGLE_CLOUD_LOCATION,
+    GOOGLE_CLOUD_PROJECT,
+    MODEL_NAME,
+)
 
 _CACHED_ADC: tuple[Any, str | None] | None = None
 
@@ -32,7 +39,7 @@ def _get_cached_adc() -> tuple[Any, str | None]:
     return _CACHED_ADC
 
 
-def _build_ipv4_http_options(timeout_ms: int = 90_000) -> types.HttpOptions:
+def _build_ipv4_http_options(timeout_ms: int = 240_000) -> types.HttpOptions:
     """Bind httpx sync and async transports to IPv4 (0.0.0.0) with a bounded timeout and single-attempt fail-fast.
 
     In WSL2, dual-stack DNS resolution for `*.googleapis.com` often attempts an IPv6 (`AAAA`)
@@ -73,9 +80,14 @@ def get_genai_client() -> tuple[genai.Client | None, str]:
     """
     # 1. Attempt Application Default Credentials (ADC)
     try:
-        credentials, project_id = _get_cached_adc()
-        proj = project_id or os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("GCP_PROJECT")
-        location = os.getenv("GOOGLE_CLOUD_LOCATION", "global")
+        credentials, adc_project_id = _get_cached_adc()
+        proj = (
+            os.getenv("GOOGLE_CLOUD_PROJECT")
+            or os.getenv("GCP_PROJECT")
+            or GOOGLE_CLOUD_PROJECT
+            or adc_project_id
+        )
+        location = os.getenv("GOOGLE_CLOUD_LOCATION", GOOGLE_CLOUD_LOCATION or DEFAULT_LOCATION)
         if proj:
             client = genai.Client(
                 vertexai=True,
