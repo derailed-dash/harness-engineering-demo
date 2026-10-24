@@ -25,6 +25,7 @@ from app.config import (
     UNHARNESSED_DIR,
     load_cosmic_conquest_spec,
     load_harness_context,
+    load_harness_rubric,
     load_harness_skills,
 )
 from app.living_memory import LivingMemoryManager
@@ -67,6 +68,7 @@ def index(request: Request) -> Any:
             "asset_version": asset_version,
             "spec_content": load_cosmic_conquest_spec(),
             "harness_context_content": load_harness_context(),
+            "rubric_content": load_harness_rubric(),
             "harness_skills": load_harness_skills(),
             "living_memory_content": LivingMemoryManager().get_content(),
         },
@@ -120,6 +122,17 @@ def get_harness_context() -> dict[str, Any]:
     return {
         "filename": "harness/harness_context.md",
         "title": "Engineering Context & Harness Guardrails (GEMINI.md)",
+        "content": content,
+    }
+
+
+@app.get("/api/rubric")
+def get_rubric() -> dict[str, Any]:
+    """Return the raw markdown content and metadata for the declarative evaluation rubric."""
+    content = load_harness_rubric()
+    return {
+        "filename": "harness/RUBRIC.md",
+        "title": "Two-Tier Evaluation Rubric (Semantic Criteria 2.1–2.6)",
         "content": content,
     }
 

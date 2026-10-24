@@ -57,19 +57,47 @@ class LivingMemoryManager:
         scorecard: dict[str, Any],
         actions_taken: list[str] | None = None,
         strategy_notes: str | None = None,
+        previous_score: float | None = None,
+        pytest_result: dict[str, Any] | None = None,
+        ruff_result: dict[str, Any] | None = None,
     ) -> str:
         """Record the evaluation scorecard, failure diagnostics, and remediation strategy."""
         self.output_dir.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now(timezone.utc).strftime("%H:%M:%S UTC")
-        score = scorecard.get("score", 0.0)
-        max_score = scorecard.get("max_score", 14.0)
-        is_passing = scorecard.get("is_passing", False)
+        score = float(scorecard.get("score", 0.0))
+        max_score = float(scorecard.get("max_score", 14.0))
+        is_passing = bool(scorecard.get("is_passing", False))
         status_label = "PASSED (Gate Satisfied)" if is_passing else "FAILED (Self-Healing Required)"
+
+        checks_by_id = {
+            str(c.get("id")): c for c in scorecard.get("checks", []) if isinstance(c, dict)
+        }
+        if pytest_result and "status" in pytest_result:
+            pytest_status = str(pytest_result["status"]).upper()
+        elif "1.1" in checks_by_id:
+            pytest_status = "PASSED" if checks_by_id["1.1"].get("passed") else "FAILED"
+        else:
+            pytest_status = "N/A"
+
+        if ruff_result and "status" in ruff_result:
+            ruff_status = str(ruff_result["status"]).upper()
+        elif "1.2" in checks_by_id:
+            ruff_status = "PASSED" if checks_by_id["1.2"].get("passed") else "FAILED"
+        else:
+            ruff_status = "N/A"
 
         lines: list[str] = [
             f"## Iteration {iteration} / {max_iterations} [{timestamp}]\n",
             f"- **Score**: `{score:.1f} / {max_score:.1f}` ({status_label})\n",
         ]
+        if previous_score is not None:
+            delta = score - float(previous_score)
+            lines.append(
+                f"- **Score Delta**: `{delta:+.1f}` (from `{float(previous_score):.1f}` to `{score:.1f}`)\n"
+            )
+        lines.append(
+            f"- **Verification Receipt**: `pytest: {pytest_status}` | `ruff: {ruff_status}`\n"
+        )
 
         if actions_taken:
             lines.append("- **Files Authored / Modified**:\n")
@@ -79,8 +107,11 @@ class LivingMemoryManager:
         failed_checks = scorecard.get("failed_checks", [])
         if failed_checks:
             lines.append("\n### Active Failures & Diagnostic Telemetry\n")
+            for idx, c in enumerate(failed_checks, start=1):
+                lines.append(f"{idx}. **Check {c['id']} ({c['name']})**: {c.get('details', '')}\n")
+            lines.append("\n### Next-Turn Remediation Targets\n")
             for c in failed_checks:
-                lines.append(f"1. **Check {c['id']} ({c['name']})**: {c.get('details', '')}\n")
+                lines.append(f"- Resolve **Check {c['id']} ({c['name']})**\n")
         else:
             lines.append("\n### Rubric Status\n- All criteria passed cleanly. Zero defects detected.\n")
 

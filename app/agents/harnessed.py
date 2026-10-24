@@ -1,58 +1,46 @@
-"""Harnessed Loop Engineering Agent Pipeline built with Google ADK (`google-adk`).
+"""Harnessed Loop Runner & Workbench SSE Streaming Pipeline.
 
-Serves as a clean, reusable reference implementation for building an autonomous
-self-healing coding harness with Google ADK:
+Executes the Google ADK `LoopAgent` defined in `app/agents/agent.py` via `Runner`
+and `InMemorySessionService`, translating ADK session and tool events into
+Server-Sent Events (SSE) for the split-screen Workbench UI.
 
-1. **Dynamic State-Driven Instruction (`build_harness_instruction`)**:
-   Injects standing organisation guardrails (`harness/harness_context.md`) and
-   any failure diagnostics from prior loop turns (`living_memory_feedback`) without
-   polluting the task specification.
-2. **Tool-Equipped Builder Agent (`create_builder_agent`)**:
-   An ADK `Agent` (`LlmAgent`) equipped with `HARNESS_TOOLS` (`activate_skill`,
-   `write_workspace_file`, `read_workspace_file`, `run_pytest`, `run_ruff_check`).
-3. **Rubric Evaluation & Escalation Gate (`RubricEvaluationGateAgent`)**:
-   A custom ADK `BaseAgent` that evaluates the candidate workspace against the
-   two-tier rubric at the end of every iteration, persists diagnostics to
-   `harness/output/LIVING_MEMORY.md`, updates `session.state["living_memory_feedback"]`,
-   and emits `EventActions(escalate=True)` when the gate passes (100% score) or plateaus.
-4. **Autonomous Loop Orchestration (`create_harness_loop_agent`)**:
-   Composes the Builder Agent and Rubric Gate inside a native ADK `LoopAgent`
-   executed via `Runner` and `InMemorySessionService`.
+Re-exports the core ADK agent primitives (`RubricEvaluationGateAgent`,
+`build_harness_instruction`, `create_builder_agent`, `create_harness_loop_agent`,
+`materialise_builder_output_callback`, `root_agent`) for backwards compatibility.
 """
 
 import asyncio
 import time
-import warnings
 from pathlib import Path
 from typing import Any, AsyncGenerator
 
-from google.adk.agents import Agent, BaseAgent, LoopAgent
-from google.adk.agents.invocation_context import InvocationContext
-from google.adk.agents.readonly_context import ReadonlyContext
-from google.adk.events import Event, EventActions
-from google.adk.models import Gemini
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
+from app.agents.agent import (
+    RubricEvaluationGateAgent,
+    SessionToolContextAdapter,
+    build_harness_instruction,
+    create_builder_agent,
+    create_harness_loop_agent,
+    materialise_builder_output_callback,
+    root_agent,
+)
 from app.agents.baselines import (
     _apply_harnessed_self_healing_iteration_2,
     _write_harnessed_iteration_1,
 )
 from app.agents.tools import (
-    HARNESS_TOOLS,
     SKILL_METADATA,
     activate_skill,
-    run_pytest,
-    run_ruff_check,
 )
 from app.client_factory import get_adk_gemini_model
 from app.config import (
+    FAST_DEMO_MODE,
     MAX_ITERATIONS,
-    PLATEAU_LIMIT,
     load_cosmic_conquest_spec,
     load_harness_context,
-    load_harness_skill_catalog,
     load_harness_skills,
 )
 from app.living_memory import LivingMemoryManager
@@ -61,27 +49,17 @@ from app.token_tracker import TokenMetrics
 
 __all__ = [
     "RubricEvaluationGateAgent",
+    "SessionToolContextAdapter",
     "build_harness_instruction",
     "create_builder_agent",
     "create_harness_loop_agent",
     "get_harnessed_initial_prompt",
+    "materialise_builder_output_callback",
+    "root_agent",
     "run_harnessed_pipeline",
     "_apply_harnessed_self_healing_iteration_2",
     "_write_harnessed_iteration_1",
 ]
-
-
-class _SessionToolContextAdapter:
-    """Lightweight adapter exposing `session.state` to ADK tool functions during gate steps.
-
-    ADK FunctionTools expect a `ToolContext` with a `.state` mapping, whereas custom
-    `BaseAgent._run_async_impl` receives an `InvocationContext` (`ctx.session.state`).
-    Wrapping `ctx.session.state` allows the evaluation gate to invoke the exact same
-    ADK tool functions (`activate_skill`, `run_pytest`, `run_ruff_check`) directly.
-    """
-
-    def __init__(self, state: dict[str, Any]) -> None:
-        self.state = state
 
 
 def get_harnessed_initial_prompt() -> str:
@@ -103,249 +81,6 @@ def get_harnessed_initial_prompt() -> str:
             prompt_parts.append(f"## Skill: {skill_name}\n\n{skill_content}\n\n")
 
     return "".join(prompt_parts)
-
-
-def build_harness_instruction(ctx: ReadonlyContext) -> str:
-    """ADK InstructionProvider assembling standing guardrails, skills catalog, and living memory feedback.
-
-    Reads persona and engineering guardrails from `ctx.state["harness_context"]`
-    (populated from `harness/harness_context.md`), dynamically lists the `<available_skills>`
-    catalog discovered from `harness/skills/*/SKILL.md`, appends activated skill instructions
-    from `ctx.state["skills_context"]`, and injects any active failure diagnostics
-    recorded in `ctx.state["living_memory_feedback"]` by the Rubric Evaluation Gate.
-    """
-    harness_context = str(ctx.state.get("harness_context") or load_harness_context()).strip()
-    skills_context = str(ctx.state.get("skills_context") or "").strip()
-    living_memory_feedback = str(ctx.state.get("living_memory_feedback") or "").strip()
-
-    sections = [harness_context]
-
-    catalog = load_harness_skill_catalog()
-    if catalog:
-        catalog_lines = [
-            f"- `{skill_id}` ({meta['name']}): {meta['description']}"
-            for skill_id, meta in sorted(catalog.items())
-        ]
-        sections.append(
-            "<available_skills>\n"
-            + "\n".join(catalog_lines)
-            + "\n</available_skills>"
-        )
-
-    if skills_context:
-        sections.append(f"# ACTIVATED ENGINEERING SKILLS (harness/skills/)\n\n{skills_context}")
-    if living_memory_feedback:
-        sections.append(
-            "## LIVING MEMORY DIAGNOSTICS (REMEDIATION REQUIRED)\n\n"
-            f"{living_memory_feedback}"
-        )
-
-    return "\n\n---\n\n".join(sections)
-
-
-def create_builder_agent(model: Gemini | str) -> Agent:
-    """Create the tool-equipped ADK Builder Agent (`LlmAgent`) for the Harness Loop."""
-    return Agent(
-        name="harnessed_builder_agent",
-        description=(
-            "Iterative software engineering agent equipped with on-demand skills, "
-            "workspace file tools, pytest runner, and ruff static analyser."
-        ),
-        model=model,
-        instruction=build_harness_instruction,
-        tools=list(HARNESS_TOOLS),
-        generate_content_config=types.GenerateContentConfig(
-            temperature=0.2,
-            max_output_tokens=2048,
-            # Disable extended thinking budget so Gemini 3.8 Flash responds in ~10-15s per
-            # loop iteration rather than spending 30s+ in internal chain-of-thought.
-            # Iterative reasoning is handled externally by the ADK LoopAgent + Living Memory.
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
-            # Register HARNESS_TOOLS on the Agent so tool schemas are bound and inspectable,
-            # but set FunctionCallingConfigMode.NONE for the live demo so the model does not
-            # spend 2-3 minutes executing 10+ sequential file-writing tool round-trips per turn.
-            # Instead, RubricEvaluationGateAgent deterministically materialises the workspace
-            # and invokes run_pytest / run_ruff_check at the end of each iteration.
-            # (To let the LLM call tools autonomously in a non-demo harness, remove tool_config.)
-            tool_config=types.ToolConfig(
-                function_calling_config=types.FunctionCallingConfig(
-                    mode=types.FunctionCallingConfigMode.NONE
-                )
-            ),
-        ),
-    )
-
-
-class RubricEvaluationGateAgent(BaseAgent):
-    """Custom ADK BaseAgent implementing the Turn-by-Turn Rubric Gate & Escalation Controller.
-
-    At the end of every `LoopAgent` iteration, this agent:
-    1. Materialises generated/remediated files into the workspace and executes the
-       deterministic harness verification tools (`run_pytest` and `run_ruff_check`).
-    2. Evaluates the candidate workspace against Tier 1 (Mechanical) and Tier 2 (Semantic) checks.
-    3. Persists the scorecard and failure diagnostics to `harness/output/LIVING_MEMORY.md`.
-    4. Injects actionable failure diagnostics into `ctx.session.state["living_memory_feedback"]`.
-    5. Emits an ADK `Event` with `actions=EventActions(escalate=True)` as soon as 100% of
-       rubric checks pass (or a plateau / iteration cap is reached), cleanly terminating the loop.
-    """
-
-    max_iterations: int = MAX_ITERATIONS
-    plateau_limit: int = PLATEAU_LIMIT
-    living_memory_path: Path | None = None
-
-    async def _run_async_impl(
-        self,
-        ctx: InvocationContext,
-    ) -> AsyncGenerator[Event, None]:
-        iteration = int(ctx.session.state.get("iteration", 0)) + 1
-        ctx.session.state["iteration"] = iteration
-
-        workspace_path = Path(str(ctx.session.state["workspace_path"]))
-        # Only materialise candidate files when preceded by a live Builder Agent turn.
-        # When RubricEvaluationGateAgent is unit-tested in isolation against a pre-built
-        # workspace, preserve the existing workspace files untouched.
-        has_builder_event = any(
-            ev.author == "harnessed_builder_agent" for ev in ctx.session.events
-        )
-
-        pytest_result: dict[str, Any] | None = None
-        ruff_result: dict[str, Any] | None = None
-        tool_ctx = _SessionToolContextAdapter(ctx.session.state)
-
-        if has_builder_event:
-            if iteration == 1:
-                modified_files = _write_harnessed_iteration_1(workspace_path)
-            else:
-                modified_files = _apply_harnessed_self_healing_iteration_2(workspace_path)
-            ctx.session.state["files_modified_in_iteration"] = list(modified_files)
-
-            # Execute deterministic pytest and ruff tools on the populated workspace
-            pytest_result = await asyncio.to_thread(run_pytest, tool_ctx)  # type: ignore[arg-type]
-            ruff_result = await asyncio.to_thread(run_ruff_check, tool_ctx)  # type: ignore[arg-type]
-        else:
-            modified_files = list(ctx.session.state.get("files_modified_in_iteration", []))
-
-        trajectory: list[dict[str, Any]] = list(ctx.session.state.get("tool_trajectory", []))
-
-        scorecard = await asyncio.to_thread(
-            evaluate_candidate_workspace,
-            workspace_path,
-            trajectory=trajectory,
-        )
-
-        # Track score history for plateau detection
-        score_history: list[float] = list(ctx.session.state.get("score_history", []))
-        current_score = float(scorecard["score"])
-        score_history.append(current_score)
-        ctx.session.state["score_history"] = score_history
-
-        is_passing = bool(scorecard["is_passing"])
-        is_plateau = (
-            len(score_history) >= self.plateau_limit
-            and len(set(score_history[-self.plateau_limit :])) == 1
-        )
-        reached_max = iteration >= self.max_iterations
-        should_stop = is_passing or is_plateau or reached_max
-
-        if is_passing:
-            stop_reason = "gate_passed"
-            strategy_notes = (
-                "All rubric criteria satisfied cleanly (100% pass rate). "
-                "Escalating to terminate autonomous loop."
-            )
-            living_memory_feedback = ""
-        elif is_plateau:
-            stop_reason = "plateau_reached"
-            strategy_notes = (
-                f"Score plateaued at {current_score:.1f}/{scorecard['max_score']:.1f} "
-                f"over {self.plateau_limit} consecutive turns. Stopping loop."
-            )
-            living_memory_feedback = str(scorecard["diagnostics"])
-        elif reached_max:
-            stop_reason = "max_iterations_reached"
-            strategy_notes = f"Maximum iteration budget ({self.max_iterations}) reached."
-            living_memory_feedback = str(scorecard["diagnostics"])
-        else:
-            stop_reason = "continue_self_healing"
-            strategy_notes = (
-                "Evaluator flagged failed criteria. Reinjecting failure diagnostics "
-                f"into Iteration {iteration + 1} context for targeted self-healing."
-            )
-            living_memory_feedback = str(scorecard["diagnostics"])
-
-        # Persist iteration telemetry to LIVING_MEMORY.md
-        memory_mgr = LivingMemoryManager(output_path=self.living_memory_path)
-        memory_mgr.record_iteration(
-            iteration=iteration,
-            max_iterations=self.max_iterations,
-            scorecard=scorecard,
-            actions_taken=modified_files,
-            strategy_notes=strategy_notes,
-        )
-
-        # Both update ctx.session.state in-place AND emit EventActions.state_delta:
-        # InMemorySessionService commits cross-turn state deltas from yielded events,
-        # while direct in-place updates support standalone unit test invocations.
-        # Setting escalate=True signals the parent ADK LoopAgent to terminate the loop.
-        state_delta: dict[str, Any] = {
-            "iteration": iteration,
-            "score_history": score_history,
-            "living_memory_feedback": living_memory_feedback,
-            "files_modified_in_iteration": [],
-            "tool_trajectory": trajectory,
-        }
-        ctx.session.state.update(state_delta)
-
-        yield Event(
-            author=self.name,
-            custom_metadata={
-                "iteration": iteration,
-                "max_iterations": self.max_iterations,
-                "scorecard": scorecard,
-                "files_modified": modified_files,
-                "pytest_result": pytest_result,
-                "ruff_result": ruff_result,
-                "should_stop": should_stop,
-                "stop_reason": stop_reason,
-            },
-            actions=EventActions(
-                escalate=should_stop,
-                state_delta=state_delta,
-            ),
-        )
-
-
-def create_harness_loop_agent(
-    model: Gemini | str,
-    max_iterations: int = MAX_ITERATIONS,
-    living_memory_path: Path | None = None,
-) -> LoopAgent:
-    """Construct the composite Google ADK `LoopAgent` for Autonomous Harness Engineering.
-
-    Sub-agents execute sequentially on every loop turn:
-    1. `harnessed_builder_agent` (`LlmAgent`): Synthesises architectural plan, TDD tests,
-       and modular implementation guided by `harness/harness_context.md`, activated skills,
-       and `living_memory_feedback`.
-    2. `rubric_evaluation_gate` (`RubricEvaluationGateAgent`): Materialises files, executes
-       `pytest` and `ruff`, runs the 14-point rubric, updates `LIVING_MEMORY.md`, and
-       escalates (`escalate=True`) when the gate passes.
-    """
-    builder_agent = create_builder_agent(model=model)
-    gate_agent = RubricEvaluationGateAgent(
-        name="rubric_evaluation_gate",
-        description="Deterministic 14-point rubric evaluation gate and loop escalation controller.",
-        max_iterations=max_iterations,
-        living_memory_path=living_memory_path,
-    )
-    # Suppress upstream google-adk internal Pydantic config_type deprecation warning in LoopAgent
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        return LoopAgent(
-            name="harness_engineering_loop",
-            description="Autonomous TDD and rubric-gated self-healing engineering loop.",
-            sub_agents=[builder_agent, gate_agent],
-            max_iterations=max_iterations,
-        )
 
 
 async def _run_deterministic_harness_fallback(
@@ -535,29 +270,34 @@ async def run_harnessed_pipeline(
             "skills_context": "",
             "living_memory_feedback": "",
             "iteration": 0,
+            "fast_demo_mode": FAST_DEMO_MODE,
             "activated_skills": [],
             "files_modified_in_iteration": [],
             "tool_trajectory": [],
             "score_history": [],
         }
-        init_tool_ctx = _SessionToolContextAdapter(initial_state)
+        init_tool_ctx = SessionToolContextAdapter(initial_state)
 
-        # 1. Activate specialised engineering skills via ADK activate_skill tool
-        skill_sections: list[str] = []
-        for skill_id in SKILL_METADATA:
-            res = activate_skill(skill_id, init_tool_ctx)  # type: ignore[arg-type]
-            if res.get("status") == "ok":
-                skill_sections.append(f"## Skill: {skill_id}\n\n{res['instructions']}")
-                yield {
-                    "stage": "skill_activated",
-                    "skill": skill_id,
-                    "name": res["name"],
-                    "message": f"ADK Agent activated skill: {skill_id}.",
-                    "rationale": res["rationale"],
-                }
-        initial_state["skills_context"] = "\n\n".join(skill_sections)
+        # In FAST_DEMO_MODE, pre-activate skills upfront so FunctionCallingConfigMode.NONE
+        # turns complete in ~15s. When FAST_DEMO_MODE=false, the Builder Agent invokes
+        # activate_skill on demand via native ADK tool calling.
+        if FAST_DEMO_MODE:
+            for skill_id in SKILL_METADATA:
+                res = activate_skill(skill_id, init_tool_ctx)  # type: ignore[arg-type]
+                if res.get("status") == "ok":
+                    yield {
+                        "stage": "skill_activated",
+                        "skill": skill_id,
+                        "name": res["name"],
+                        "message": f"ADK Agent activated skill: {skill_id}.",
+                        "rationale": res["rationale"],
+                    }
 
-        loop_agent = create_harness_loop_agent(model=adk_model, max_iterations=MAX_ITERATIONS)
+        loop_agent = create_harness_loop_agent(
+            model=adk_model,
+            max_iterations=MAX_ITERATIONS,
+            fast_demo_mode=FAST_DEMO_MODE,
+        )
         session_service = InMemorySessionService()
         # Match the module package name ('app.agents') so ADK Runner does not log an app-name mismatch warning
         app_name = "agents"
@@ -604,12 +344,32 @@ async def run_harnessed_pipeline(
                     label=f"ADK Harness Loop (Iteration {current_iteration})",
                 )
 
-            # 2. Handle Builder Agent narrative/code response
+            # 2. Stream on-demand skill activations & tool responses when FAST_DEMO_MODE is disabled
+            if event.content and event.content.parts:
+                for part in event.content.parts:
+                    fn_resp = getattr(part, "function_response", None)
+                    if fn_resp and getattr(fn_resp, "name", "") == "activate_skill":
+                        resp_data = getattr(fn_resp, "response", {}) or {}
+                        if isinstance(resp_data, dict) and resp_data.get("status") == "ok":
+                            yield {
+                                "stage": "skill_activated",
+                                "skill": resp_data.get("skill", ""),
+                                "name": resp_data.get("name", ""),
+                                "message": f"ADK Agent activated skill: {resp_data.get('skill', '')}.",
+                                "rationale": resp_data.get("rationale", ""),
+                            }
+
+            # 3. Handle Builder Agent narrative/code response
             if event.author == "harnessed_builder_agent" and event.content and event.content.parts:
-                text_chunks = [p.text for p in event.content.parts if p.text]
+                visible_chunks = [
+                    p.text
+                    for p in event.content.parts
+                    if p.text and not getattr(p, "thought", False)
+                ]
+                text_chunks = visible_chunks or [p.text for p in event.content.parts if p.text]
                 if text_chunks:
                     combined_text = "\n".join(text_chunks).strip()
-                    snippet = combined_text[:800] + ("..." if len(combined_text) > 800 else "")
+                    snippet = combined_text[:1600] + ("..." if len(combined_text) > 1600 else "")
                     yield {
                         "stage": "raw_response",
                         "iteration": current_iteration,
@@ -617,7 +377,7 @@ async def run_harnessed_pipeline(
                         "response_text": snippet,
                     }
 
-            # 3. Handle RubricEvaluationGateAgent verification tools, scorecard & loop escalation
+            # 4. Handle RubricEvaluationGateAgent verification tools, scorecard & loop escalation
             if event.author == "rubric_evaluation_gate" and event.custom_metadata:
                 meta_dict = dict(event.custom_metadata)
                 eval_iter = int(meta_dict.get("iteration", current_iteration))
@@ -716,4 +476,3 @@ async def run_harnessed_pipeline(
             workspace_path, token_tracker, memory_mgr, start_time
         ):
             yield evt
-

@@ -96,6 +96,13 @@ def activate_skill(skill_name: str, tool_context: ToolContext) -> dict[str, Any]
         activated.append(normalised)
         tool_context.state["activated_skills"] = activated
 
+    skill_section = f"## Skill: {normalised}\n\n{skills[normalised]}"
+    existing_context = str(tool_context.state.get("skills_context") or "").strip()
+    if f"## Skill: {normalised}" not in existing_context:
+        tool_context.state["skills_context"] = (
+            f"{existing_context}\n\n{skill_section}" if existing_context else skill_section
+        )
+
     _record_trajectory(tool_context, "activate_skill", "ok", normalised)
     catalog = load_harness_skill_catalog()
     entry = catalog.get(normalised) or SKILL_METADATA.get(

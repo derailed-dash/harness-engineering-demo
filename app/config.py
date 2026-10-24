@@ -14,11 +14,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load .env if present
 load_dotenv(BASE_DIR / ".env")
 
-# Model configuration
+# Model & Vertex AI endpoint configuration
 DEFAULT_MODEL = "gemini-3.8-flash"
 MODEL_NAME = os.getenv("MODEL_NAME", DEFAULT_MODEL)
+GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("GCP_PROJECT") or ""
+DEFAULT_LOCATION = "global"
+GOOGLE_CLOUD_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", DEFAULT_LOCATION)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-MAX_OUTPUT_TOKENS = int(os.getenv("MAX_OUTPUT_TOKENS", "32768"))
+# Default output token limit on gemini-3.8-flash via google-genai SDK is 65,536 (64K).
+MAX_OUTPUT_TOKENS = int(os.getenv("MAX_OUTPUT_TOKENS", "65536"))
 
 # Server configuration
 HOST = os.getenv("HOST", "0.0.0.0")
@@ -27,6 +31,7 @@ PORT = int(os.getenv("PORT", "8080"))
 # Execution thresholds
 MAX_ITERATIONS = int(os.getenv("DEFAULT_MAX_ITERATIONS", "5"))
 PLATEAU_LIMIT = int(os.getenv("DEFAULT_PLATEAU_LIMIT", "3"))
+FAST_DEMO_MODE = os.getenv("FAST_DEMO_MODE", "true").strip().lower() not in {"0", "false", "no"}
 
 # Workspaces directory
 WORKSPACES_DIR = BASE_DIR / "workspaces"
@@ -36,6 +41,7 @@ SPECS_DIR = BASE_DIR / "specs"
 COSMIC_CONQUEST_SPEC_PATH = SPECS_DIR / "cosmic_conquest_spec.md"
 HARNESS_DIR = BASE_DIR / "harness"
 HARNESS_CONTEXT_PATH = HARNESS_DIR / "harness_context.md"
+RUBRIC_PATH = HARNESS_DIR / "RUBRIC.md"
 GOLDEN_TESTS_DIR = BASE_DIR / "golden_tests"
 REPLAY_DATA_PATH = BASE_DIR / "app" / "replay" / "replay_data.json"
 REPLAY_SNAPSHOTS_DIR = BASE_DIR / "snapshots"
@@ -56,6 +62,13 @@ def load_harness_context() -> str:
     """Load harness context and engineering guardrails from harness/harness_context.md."""
     if HARNESS_CONTEXT_PATH.is_file():
         return HARNESS_CONTEXT_PATH.read_text(encoding="utf-8")
+    return ""
+
+
+def load_harness_rubric() -> str:
+    """Load semantic rubric criteria from harness/RUBRIC.md."""
+    if RUBRIC_PATH.is_file():
+        return RUBRIC_PATH.read_text(encoding="utf-8")
     return ""
 
 

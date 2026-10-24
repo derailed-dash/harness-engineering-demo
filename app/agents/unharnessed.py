@@ -60,6 +60,11 @@ def create_unharnessed_agent(model: Gemini | str) -> Agent:
         generate_content_config=types.GenerateContentConfig(
             temperature=0.2,
             max_output_tokens=MAX_OUTPUT_TOKENS,
+            thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
+            http_options=types.HttpOptions(
+                timeout=240_000,
+                retry_options=types.HttpRetryOptions(attempts=1),
+            ),
         ),
     )
 

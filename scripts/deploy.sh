@@ -9,6 +9,7 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SERVICE_NAME="harness-engineering-demo"
 REGION="${GCP_REGION:-us-central1}"
 MODEL_NAME="${MODEL_NAME:-gemini-3.8-flash}"
+GOOGLE_CLOUD_LOCATION="${GOOGLE_CLOUD_LOCATION:-global}"
 
 echo "==========================================================="
 echo " Deploying Harness Engineering Demo to Google Cloud Run"
@@ -36,7 +37,7 @@ gcloud run deploy "${SERVICE_NAME}" \
     --source "${PROJECT_ROOT}" \
     --region "${REGION}" \
     --allow-unauthenticated \
-    --set-env-vars "MODEL_NAME=${MODEL_NAME}" \
+    --set-env-vars "GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION},MODEL_NAME=${MODEL_NAME}" \
     --port 8080
 
 echo ""

@@ -8,10 +8,20 @@ Verifies:
 
 from pathlib import Path
 
-from app.config import HARNESSED_DIR
+from app.config import HARNESSED_DIR, RUBRIC_PATH, load_harness_rubric
 from app.rubric.evaluator import evaluate_candidate_workspace
 from app.rubric.mechanical import check_dynamic_api_contract, run_mechanical_tier
-from app.rubric.semantic import _evaluate_heuristic_fallback
+from app.rubric.semantic import SEMANTIC_RUBRIC_PROMPT, _evaluate_heuristic_fallback
+
+
+def test_declarative_rubric_markdown_single_source_of_truth() -> None:
+    """Verify harness/RUBRIC.md exists and backs SEMANTIC_RUBRIC_PROMPT."""
+    assert RUBRIC_PATH.is_file()
+    rubric_text = load_harness_rubric()
+    assert len(rubric_text) > 200
+    assert rubric_text == SEMANTIC_RUBRIC_PROMPT
+    for check_id in ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6"]:
+        assert check_id in rubric_text
 
 
 def test_check_1_8_dynamic_api_contract_harnessed() -> None:

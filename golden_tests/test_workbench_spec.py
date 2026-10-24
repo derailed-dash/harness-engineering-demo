@@ -79,6 +79,24 @@ def test_api_harness_context_endpoint() -> None:
     assert "Strict PEP 585" in data["content"]
 
 
+def test_api_rubric_endpoint_and_embedding() -> None:
+    """Verify GET /api/rubric serves harness/RUBRIC.md and is embedded in the Workbench UI."""
+    client = TestClient(app)
+    response = client.get("/api/rubric")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["filename"] == "harness/RUBRIC.md"
+    assert "2.1 Target State Completion" in data["content"]
+    assert "2.6 Progression Ergonomics" in data["content"]
+
+    res_html = client.get("/")
+    assert res_html.status_code == 200
+    html = res_html.text
+    assert 'id="rubric-content-data"' in html
+    assert "openRubricModal()" in html
+    assert "harness/RUBRIC.md" in html
+
+
 
 def test_api_skills_endpoints_and_embedding() -> None:
     """Verify GET /api/skills and /api/skills/{skill_name} return specialised skills and are embedded in HTML."""

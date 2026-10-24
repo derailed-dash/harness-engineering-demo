@@ -157,7 +157,7 @@ class DemoOrchestrator:
 
         init_evt: dict[str, Any] = {
             "type": "init",
-            "message": "Starting Parallel Comparison: Vibe Coding vs Harness Engineering running concurrently...",
+            "message": "Running...",
         }
         rec_init = dict(init_evt)
         rec_init["delay_ms"] = 300

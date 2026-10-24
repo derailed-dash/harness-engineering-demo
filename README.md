@@ -43,32 +43,44 @@ TL;DR - we should not pollute individual feature tickets or prompts with repetit
 
 A representative head-to-head comparison run reveals a stark contrast across latency, token consumption, total cost, and functional correctness:
 
-![Results Metrics and Comparison Summary](media/results-metrics.png)
+![Results Metrics and Comparison Summary](media/sbs-result.png)
 
 | Metric | Unharnessed Track (Vibe Coding) | Harnessed Track (Loop Engineering) | Operational Advantage |
 |:---|:---|:---|:---|
-| **Execution Duration** | **2m 16s** (136 seconds) | **0m 32s** (32 seconds) | **4.25x faster** |
-| **Combined Tokens** | 45,571 tokens | 24,287 tokens | **46.7% fewer tokens** |
-| **Estimated Cost** | $0.0168 | $0.0067 | **60.1% cheaper** |
-| **Rubric Score** | **9.0 / 14.0** (Failed) | **14.0 / 14.0** (Passed) | **100% gate pass** |
+| **Execution Duration** | **1m 24s – 2m 16s** (typically ~1.5 mins) | **0m 23s – 0m 35s** (2 iterations) | **3–4x faster** |
+| **Combined Tokens** | **17,670 – 45,571 tokens** (`1,293–12,765 in / 15,753–16,967 out`) | **~6,600 – 6,900 tokens** (`5,779 in / 1,067 out`) | **~65–85% fewer tokens** |
+| **Estimated Cost** | **$0.0099 – $0.0168** | **~$0.0015** | **~85% cheaper** |
+| **Rubric Score** | **6.0 – 11.0 / 14.0** (Always fails) | **14.0 / 14.0** (Always passes) | **100% gate pass** |
 | **Functional Outcome** | ❌ Broken / Non-functional | ✅ Fully playable & verified | **Only harnessed code works** |
 
 ### Why the Harnessed Track Outperforms Vibe Coding
 
-1. **Structured Discipline Beats Monolithic Hallucination**:
-   - In the **Unharnessed track**, the model is given a broad, open-loop prompt without architectural guardrails or intermediate feedback tools.
-   - In the **Harnessed track**, specialised skills (`test-driven-development`, `api-and-interface-design`, `gemini-api-dev`) and explicit guardrails guide the model into concise, modular phases. It writes unit tests first, implements only what is required.
+1. **Structured Discipline Beats Monolithic Hallucination (`12 / 14` on Turn 1)**:
+   - Both tracks run with the full 64K output token ceiling (`MAX_OUTPUT_TOKENS = 65536`) on `gemini-3.8-flash` — there is no artificial output token cap.
+   - In the **Unharnessed track**, the model receives a broad, open-loop prompt without architectural guardrails or intermediate feedback tools, causing it to stream 15,000–17,000 output tokens of unverified boilerplate in a single pass (`7.0–11.0 / 14.0`).
+   - In the **Harnessed track**, [`harness/harness_context.md`](harness/harness_context.md) and activated skills (`test-driven-development`, `api-and-interface-design`, `gemini-api-dev`) guide Turn 1 to produce a concise **Architectural & TDD Verification Plan** (`~800` output tokens) while `materialise_builder_output_callback` materialises the modular workspace files — immediately achieving **12.0 / 14.0** on Iteration 1.
 
-2. **Autonomous Self-Healing via Rubric Diagnostics**:
-   - The unharnessed agent has no second chance. In reality, a human would need to then address and fix all the issues.
-   - The harnessed agent evaluates candidate code against the 14-point rubric on every turn. Specific diagnostic feedback is reinjected into living memory, enabling targeted remediation in Iteration 2 to achieve a verified **14 / 14 (100%)** score.
+2. **Autonomous Self-Healing via Distilled Living Memory Receipts (`12 / 14` $\rightarrow$ `14 / 14` on Turn 2)**:
+   - The unharnessed agent has no second chance. In reality, a human would need to step in to diagnose and fix all the broken contracts.
+   - The harnessed agent evaluates candidate code against the 14-point rubric on every turn. A structured **Iteration Evidence Receipt** (Score Delta, `pytest`/`ruff` Verification Receipt, Active Failures, and Next-Turn Remediation Targets) is persisted to [`harness/output/LIVING_MEMORY.md`](harness/output/LIVING_MEMORY.md) and paired with an explicit remediation prompt from `RubricEvaluationGateAgent`, allowing Turn 2 to emit a focused **Self-Healing Remediation Summary** (`~240` output tokens) and achieve a verified **14.0 / 14.0 (100%)** score.
 
-3. **Lower Operational Cost Through Targeted Efficiency**:
-   - Usually, the harnessed approach uses fewer or similar numbers of tokens to the unharnessed approach. Even so, the unharnessed track tends to produce far more _output_ tokens, contributing to significantly higher TCO.
+3. **Dramatically Lower Operational Cost (~6.8K Tokens in ~23–35s) via Context Pruning, Output Discipline & `ThinkingLevel.LOW`**:
+   - By configuring `include_contents="none"` on `harnessed_builder_agent`, `ThinkingLevel.LOW` on `gemini-3.8-flash`, and explicit per-turn **output discipline** in [`harness/harness_context.md`](harness/harness_context.md), Iteration 2 prunes the raw Iteration 1 conversation history and receives only the standing guardrails plus the distilled `LIVING_MEMORY.md` receipt — keeping the entire 2-iteration self-healing run to **~6,600–6,900 tokens (~$0.0015)** in **23–35 seconds**, compared to **17,600–30,000+ tokens ($0.0100–$0.0121+)** and **1m 24s–1m 41s+** for the unharnessed single pass.
 
 4. **Guaranteed Functional Correctness**:
    - Without test runner feedback or schema validation, the unharnessed prototype suffers from broken API route contracts, missing dynamic state validation, and unhandled edge cases, rendering it unplayable.
    - The harnessed track's TDD loop and dynamic TestClient boot verify backend endpoints and frontend DOM event wiring, delivering a fully interactive and verified game.
+
+### Hints & Tips for Authoring `harness_context.md` (Controlling *What* and *How* to Output)
+
+One of the biggest practical lessons from benchmarking this workbench is that **output tokens dominate both wall-clock latency and API cost** (output tokens stream at ~100–150 tokens/sec and cost $4\times$ more than input tokens on Gemini Flash). When we initially removed artificial `max_output_tokens` caps without constraining conversational output in [`harness/harness_context.md`](harness/harness_context.md), the harnessed builder echoed entire multi-file implementations inline in chat on every turn — ballooning to **25,000–32,000 tokens (`1:56–2:19`, `$0.0128–$0.0167`)**.
+
+Applying a single, turn-agnostic **Output Discipline** protocol in [`harness/harness_context.md`](harness/harness_context.md) cut Track 2's output tokens by **~18x** (from `~20,000` output tokens down to `~1,067` output tokens) and reduced total runtime to **23 seconds (`$0.0015`)**:
+
+1. **Separate Workspace Artefacts from Conversational Synthesis (No Inline File Dumps)**: Code files belong in the workspace (written via tools or deterministic callbacks), *not* dumped verbatim into the conversational stream. Explicitly instruct the agent to omit full multi-file code dumps from chat responses.
+2. **Require a Single Bounded Engineering Turn Summary (150–250 Words) on Every Pass**: Rather than hardcoding different rules for different turn numbers, give the agent one universal output rule for every pass: emit a concise **Engineering Turn Summary** (150–250 words) stating the active scope (either the initial specification when `LIVING_MEMORY.md` is empty, or the failed checks recorded in `LIVING_MEMORY.md`), the architectural or root-cause rationale, and the targeted changes and unit tests applied.
+3. **Remediate Only the Failing Delta**: When `LIVING_MEMORY.md` contains failure diagnostics from the evaluation gate, instruct the agent to fix only the failing checks rather than re-planning or regenerating components that already passed.
+4. **Align Prompt Instructions with Tool & Skill Execution Mode**: Ensure `harness_context.md` matches your runtime mode — for example, if skills are pre-injected under `# ACTIVATED ENGINEERING SKILLS`, instruct the agent to apply them directly rather than wasting a turn re-calling `activate_skill`; and if running in callback materialisation mode (`FunctionCallingConfigMode.NONE`), instruct the agent to respond directly in Markdown rather than telling it to invoke disabled file tools.
 
 ## The Meta Architecture: The Harness (Layer 1) vs. The Generated Workload (Layer 2)
 
@@ -85,8 +97,9 @@ harness-engineering-demo/
 ├── .github/workflows/          # Automated PR quality & test suite, Gemini PR review & issue triage GitHub Actions
 ├── app/                        # Layer 1: Core engine, orchestrator, rubric evaluation, token tracking, templates, static assets
 │   ├── agents/                 # Google ADK agent pipelines and reusable harness tools
+│   │   ├── agent.py            # Pure ADK agent definitions (create_builder_agent, RubricEvaluationGateAgent, root_agent)
 │   │   ├── unharnessed.py      # Track 1: Unharnessed (Single Pass) bare ADK Agent & Runner
-│   │   ├── harnessed.py        # Track 2: Harnessed ADK LoopAgent, Builder LlmAgent, and RubricEvaluationGateAgent
+│   │   ├── harnessed.py        # Track 2: Harnessed ADK Runner, SSE streaming pipeline, and offline fallback
 │   │   ├── tools.py            # Reusable ADK FunctionTools (activate_skill, write/read file, pytest, ruff)
 │   │   └── baselines.py        # Deterministic synthetic workspace builders for offline verification
 │   ├── replay/                 # Pre-recorded presentation player and replay_data.json
@@ -98,13 +111,14 @@ harness-engineering-demo/
 │   ├── main.py                 # FastAPI application, SSE event streaming, and dynamic preview proxies
 │   ├── orchestrator.py         # Asynchronous parallel worker coordinator for live agent runs
 │   └── token_tracker.py        # Token telemetry, cost estimation ($), and metric accumulation
-├── harness/                    # Layer 1: Harness guardrails, skills, and living memory
+├── harness/                    # Layer 1: Harness guardrails, rubric, skills, and living memory
 │   ├── harness_context.md      # Reusable harness policies, persona, and tool protocol (how to engineer it)
+│   ├── RUBRIC.md               # Declarative semantic evaluation criteria (2.1–2.6) for LLM-as-a-Judge
 │   ├── skills/                 # Agent skills (test-driven-development, api-and-interface-design, gemini-api-dev)
 │   └── output/LIVING_MEMORY.md # Dynamic living memory ledger and failure feedback log
 ├── specs/                      # Task specifications
 │   └── cosmic_conquest_spec.md # Shared application specification (what to build)
-├── golden_tests/               # Independent 38-test acceptance suite validating workspaces, UI, and ADK agents
+├── golden_tests/               # Independent 41-test acceptance suite validating workspaces, UI, and ADK agents
 ├── snapshots/                  # Layer 1: Version-controlled reference snapshots backing presentation replay
 │   ├── unharnessed/            # Reference unharnessed prototype snapshot (~9.0 / 14.0)
 │   └── harnessed/              # Reference verified harnessed candidate snapshot (14.0 / 14.0)
@@ -128,19 +142,19 @@ Because the harness is built on standard **Google Agent Development Kit (`google
 
 | Component | File(s) | Portability | What You Do When Lifting |
 |:---|:---|:---|:---|
-| **ADK Workspace Tools** | [`app/agents/tools.py`](app/agents/tools.py) | **100% Portable** | Copy as-is. `activate_skill`, `write_workspace_file`, `read_workspace_file`, `run_pytest`, and `run_ruff_check` operate dynamically on `tool_context.state["workspace_dir"]`. |
-| **ADK Loop & Gate Agent** | [`app/agents/harnessed.py`](app/agents/harnessed.py) | **95% Portable** | Copy `build_harness_instruction`, `create_builder_agent`, `RubricEvaluationGateAgent`, and `create_harness_loop_agent`. Remove the demo-only offline snapshot fallback (`baselines.py`). |
+| **ADK Workspace Tools** | [`app/agents/tools.py`](app/agents/tools.py) | **100% Portable** | Copy as-is. `activate_skill`, `write_workspace_file`, `read_workspace_file`, `run_pytest`, and `run_ruff_check` operate dynamically on `tool_context.state["workspace_path"]`. |
+| **ADK Loop & Gate Agent** | [`app/agents/agent.py`](app/agents/agent.py) | **100% Portable** | Copy `build_harness_instruction`, `create_builder_agent`, `RubricEvaluationGateAgent`, `create_harness_loop_agent`, and `root_agent` (set `FAST_DEMO_MODE=false` for full autonomous tool calling). |
 | **Auth & Model Factory** | [`app/client_factory.py`](app/client_factory.py) | **100% Portable** | Copy as-is for automatic Google Cloud ADC (Vertex AI) and `GEMINI_API_KEY` dual-mode resolution. |
-| **Engineering Guardrails & Skills** | [`harness/harness_context.md`](harness/harness_context.md), [`harness/skills/`](harness/skills/) | **100% Portable** | Copy as-is for Python 3.13 / FastAPI / TDD projects, or drop new `SKILL.md` folders into `harness/skills/` (discovered automatically from frontmatter). |
-| **Evaluation Rubric** | [`app/rubric/mechanical.py`](app/rubric/mechanical.py), [`app/rubric/evaluator.py`](app/rubric/evaluator.py) | **Pluggable Gate** | Keep universal mechanical checks (`pytest`, `ruff`, PEP 585 AST, input safety, tool trajectory) and replace the domain-specific checks (1.6–1.8 and Tier 2 prompts) with your project's acceptance criteria. |
+| **Engineering Guardrails, Rubric & Skills** | [`harness/harness_context.md`](harness/harness_context.md), [`harness/RUBRIC.md`](harness/RUBRIC.md), [`harness/skills/`](harness/skills/) | **100% Portable** | Copy as-is for Python 3.13 / FastAPI / TDD projects, customise [`harness/RUBRIC.md`](harness/RUBRIC.md), or drop new `SKILL.md` folders into `harness/skills/` (discovered automatically from frontmatter). |
+| **Evaluation Rubric** | [`app/rubric/mechanical.py`](app/rubric/mechanical.py), [`app/rubric/evaluator.py`](app/rubric/evaluator.py) | **Pluggable Gate** | Keep universal mechanical checks (`pytest`, `ruff`, PEP 585 AST, input safety, tool trajectory) and replace the domain-specific checks (1.6–1.8 and [`harness/RUBRIC.md`](harness/RUBRIC.md)) with your project's acceptance criteria. |
 | **Task Specification** | [`specs/cosmic_conquest_spec.md`](specs/cosmic_conquest_spec.md) | **Project-Specific** | Replace with your own feature specification or PRD. |
 
 ### Minimal 4-Step Adaptation Guide
 
-1. **Copy the Core Harness Package**: Copy [`app/agents/tools.py`](app/agents/tools.py), [`app/agents/harnessed.py`](app/agents/harnessed.py), [`app/client_factory.py`](app/client_factory.py), and the [`harness/`](harness/) directory into your project.
+1. **Copy the Core Harness Package**: Copy [`app/agents/tools.py`](app/agents/tools.py), [`app/agents/agent.py`](app/agents/agent.py), [`app/client_factory.py`](app/client_factory.py), and the [`harness/`](harness/) directory into your project.
 2. **Define Your Goal Specification**: Write your target feature or application requirements in a Markdown spec file (e.g. `specs/my_feature_spec.md`).
-3. **Plug In Your Evaluation Gate**: Point `RubricEvaluationGateAgent` at your own `evaluate_workspace(workspace_dir, tool_trace)` function (keeping `pytest` and `ruff` mechanical gates, and customising any domain-specific checks).
-4. **Initialise Session State & Run**: Create an `InMemorySessionService` session populated with `workspace_dir`, `harness_context`, and `available_skills`, then invoke `Runner.run_async()` with `create_harness_loop_agent()`.
+3. **Plug In Your Evaluation Gate**: Point `RubricEvaluationGateAgent` at your own `evaluate_workspace(workspace_path, trajectory)` function and update [`harness/RUBRIC.md`](harness/RUBRIC.md) (keeping `pytest` and `ruff` mechanical gates, and customising any domain-specific checks).
+4. **Initialise Session State & Run**: Create an `InMemorySessionService` session populated with `workspace_path` and `harness_context`, then invoke `Runner.run_async()` with `create_harness_loop_agent(fast_demo_mode=False)` (or run via `adk web` / `adk run`).
 
 ---
 
@@ -152,7 +166,7 @@ Because the harness is built on standard **Google Agent Development Kit (`google
 - **Dedicated Per-Panel & Global Metrics**: Real-time token counts, estimated dollar costs ($), and rubric scores displayed on each agent panel, alongside combined global counters in the top banner.
 - **Embedded Game Arcade**: In-page interactive preview tabs allowing presenters to play both the unharnessed prototype and the verified 14.0 / 14.0 harnessed game.
 - **Zero-Latency Presentation Replay**: One-click instant presentation mode with pre-recorded traces for conference talks and workshops where live internet access is unreliable.
-- **Automated CI Quality & Golden Test Gates**: GitHub Actions workflows ([`.github/workflows/pr-checks.yml`](.github/workflows/pr-checks.yml) and [`.github/workflows/gemini-review.yml`](.github/workflows/gemini-review.yml)) run `codespell`, `ruff`, `pyright`, the 38-test golden suite, and automated Gemini PR code reviews on every pull request.
+- **Automated CI Quality & Golden Test Gates**: GitHub Actions workflows ([`.github/workflows/pr-checks.yml`](.github/workflows/pr-checks.yml) and [`.github/workflows/gemini-review.yml`](.github/workflows/gemini-review.yml)) run `codespell`, `ruff`, `pyright`, the 41-test golden suite, and automated Gemini PR code reviews on every pull request.
 - **Deployable to Google Cloud Run**: Containerised on Python 3.13 + `uv` with a single port (8080) hosting the workbench and both game previews.
 
 ## Getting Started
@@ -220,7 +234,7 @@ Open your browser to:
 | `make lint` | Run the full static quality suite (`codespell`, `ruff check`, and `pyright`) |
 | `make lint-fix` | Auto-fix lint and formatting issues with `ruff check --fix .` and check spelling |
 | `make typecheck` | Run `pyright` static type analysis |
-| `make test` | Run the independent 38-test golden acceptance suite (`pytest golden_tests/ -v`) |
+| `make test` | Run the independent 41-test golden acceptance suite (`pytest golden_tests/ -v`) |
 | `make verify` | Run end-to-end offline pipeline and rubric verification (`verify_demo.py`) |
 | `make docker-build` | Build the production `harness-engineering-demo` Docker container image |
 | `make docker-run` | Run the production Docker container locally on port `8080` |
