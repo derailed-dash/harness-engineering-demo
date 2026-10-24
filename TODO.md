@@ -18,28 +18,22 @@
 - [x] **Drop Redundant `reached_max` Escalation**:
   - Simplified `RubricEvaluationGateAgent` in [`app/agents/agent.py`](app/agents/agent.py) so `should_escalate = is_passing or is_plateau`, letting `LoopAgent(max_iterations=...)` natively enforce the iteration budget.
 
-### 2. Root-Cause Investigation & Fix for Track 2 Latency Stalls (`17d96e0`)
+### 2. Root-Cause Investigation & Fix for Track 2 Latency Stalls & WSL2 Timeouts
 - [x] **Root Cause #1 — `thinking_budget=0` vs `thinking_level=ThinkingLevel.LOW` on `gemini-3.8-flash`**:
   - Per official Gemini 3.8 Flash documentation (`gemini-api-guides/generate-content/thinking.md` and `docs.cloud.google.com/gemini-enterprise-agent-platform/models/guides/gemini-3-8-flash`), `gemini-3.8-flash` replaces integer `thinking_budget` with `thinking_level` (`LOW`, `MEDIUM` (default), `HIGH`; `MINIMAL` is unsupported and returns HTTP 400).
-  - Passing `thinking_budget=0` to `gemini-3.8-flash` did not disable thinking; the model still generated internal `thoughts_token_count` tokens on every call, turning each loop turn and semantic rubric check into a 30–75s+ reasoning pass.
-  - **Fix**: Switched `create_builder_agent` ([`app/agents/agent.py`](app/agents/agent.py)) and `run_semantic_tier` ([`app/rubric/semantic.py`](app/rubric/semantic.py)) to `types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW)` (with `max_output_tokens=2048` on the ~500-token JSON rubric judge).
-  - **Constraint Preserved**: Track 1 ([`app/agents/unharnessed.py`](app/agents/unharnessed.py)) is completely untouched (`MAX_OUTPUT_TOKENS = 32768`, full default thinking).
-- [x] **Root Cause #2 — Unrouted IPv6 (`AF_INET6`) Socket Stalls with `timeout=None` in `google-genai`**:
-  - On Linux/WSL2 hosts where `aiplatform.googleapis.com` resolves to both IPv4 and unrouted IPv6 (`2a00:1450:4009:...`) addresses, `google-genai`'s default `httpx.Client(timeout=None)` / `httpx.AsyncClient(timeout=None)` occasionally hit an IPv6 address first and hung in the kernel TCP SYN retransmission loop for 130–220s before falling back to IPv4.
-  - **Fix**: Added `_build_ipv4_http_options()` in [`app/client_factory.py`](app/client_factory.py) binding both sync and async `httpx` transports to `local_address="0.0.0.0"`, reducing TCP+TLS connect time to ~16–25ms.
-- [x] **Root Cause #3 — Import-Time Client Instantiation & Repeated Cold ADC Lookups**:
-  - Updated `_create_default_root_agent()` in [`app/agents/agent.py`](app/agents/agent.py) to pass `model=DEFAULT_MODEL` (`"gemini-3.8-flash"`) rather than instantiating a network client at module import time.
-  - Added `_get_cached_adc()` in [`app/client_factory.py`](app/client_factory.py) so ADC credentials and refreshed OAuth bearer tokens are reused across turns.
-
----
-
-## Next Session (To Investigate on Other Machine)
-
-- [ ] **Investigate Why Track 1 (Unharnessed Single Pass) Scored `12.0 / 14.0` on Latest Run**:
-  - Historically, Track 1 (Unharnessed / Vibe Coding) scores significantly lower (e.g. `6.0–8.0 / 14.0`).
-  - In the latest manual run recorded in [`app/replay/replay_data.json`](app/replay/replay_data.json) and [`snapshots/unharnessed/`](snapshots/unharnessed/) (`17d96e0`), Track 1 scored `12.0 / 14.0`.
-  - **Questions to investigate next**:
-    1. Which 12 checks passed and which 2 failed on Track 1 in that run (Tier 1 Mechanical `1.1–1.8` vs Tier 2 Semantic `2.1–2.6`)?
-    2. Did switching `run_semantic_tier` to `ThinkingLevel.LOW` make the LLM-as-a-Judge (`gemini-3.8-flash`) overly lenient on Tier 2 semantic checks (`2.1–2.6`) for Track 1, or did `gemini-3.8-flash` genuinely one-pass more of the spec (`specs/cosmic_conquest_spec.md`), or did `_extract_and_write_files` / fallback baseline behaviour play a role?
-    3. Compare the recorded Track 1 scorecard and generated files in [`snapshots/unharnessed/`](snapshots/unharnessed/) and [`app/replay/replay_data.json`](app/replay/replay_data.json) against previous commits (`git diff 2818a2b 17d96e0 -- app/replay/replay_data.json snapshots/unharnessed/`).
-
+  - Switched `create_builder_agent` ([`app/agents/agent.py`](app/agents/agent.py)), `create_unharnessed_agent` ([`app/agents/unharnessed.py`](app/agents/unharnessed.py)), and `run_semantic_tier` ([`app/rubric/semantic.py`](app/rubric/semantic.py)) to `types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW)`.
+- [x] **Root Cause #2 — Default 64K Output Tokens (`MAX_OUTPUT_TOKENS = 65536`) & `X-Server-Timeout` Header**:
+  - Restored `MAX_OUTPUT_TOKENS = 65536` in [`app/config.py`](app/config.py) (matching `gemini-3.8-flash`'s 64K SDK default) so single-pass multi-file generation is never prematurely truncated.
+  - Because `google-genai` populates the Vertex AI `X-Server-Timeout` HTTP header from `HttpOptions.timeout`, configured `timeout=90_000` (90s) on `unharnessed_vibe_agent` so Vertex AI does not abort Track 1 at 18s with `504 DEADLINE_EXCEEDED`.
+- [x] **Root Cause #3 — WSL2 IPv6 Blackholing, Custom `httpx` Transport SSL Context & `tenacity` Retry Amplification**:
+  - In [`app/client_factory.py`](app/client_factory.py), `_build_ipv4_http_options()` binds both sync and async `httpx` transports to `local_address="0.0.0.0"` with an explicit `ssl.create_default_context(cafile=certifi.where())`, explicit `httpx.Timeout`, and `retry_options=types.HttpRetryOptions(attempts=1)` (preventing `google-genai`'s default 5-attempt `tenacity` retry loop from multiplying any transient `504` into a multi-minute hang).
+- [x] **Root Cause #4 — Semantic Rubric Judge Prompt Slimming (`app/rubric/semantic.py`)**:
+  - Stripped `<style>...</style>` CSS blocks from `static/index.html` before sending the candidate codebase to the LLM-as-a-Judge in [`app/rubric/semantic.py`](app/rubric/semantic.py) with a 10s fail-fast timeout and heuristic fallback.
+- [x] **Root Cause #5 — Import-Time Client Instantiation & Repeated Cold ADC Lookups**:
+  - Updated `_create_default_root_agent()` in [`app/agents/agent.py`](app/agents/agent.py) to pass `model=DEFAULT_MODEL` (`"gemini-3.8-flash"`) rather than instantiating a network client at module import time, and added `_get_cached_adc()` in [`app/client_factory.py`](app/client_factory.py).
+- [x] **Verified Live Benchmark Run (`make run`)**:
+  - **Track 1 — Unharnessed (Vibe Coding)**: `7.0 / 14.0` score, `1:35` (95s), `2,429` tokens (`$0.0006`).
+  - **Track 2 — Harness Engineering with Loop**: `14.0 / 14.0` score (100% Pass Rate in 2 iterations), `0:30` (30s), `8,020` tokens (`$0.0017`).
+  - **Combined Pipeline**: Completed in `1:35`, `10,449` total tokens (`$0.0022`).
+- [x] **Synchronised Repository Documentation & Blog Series**:
+  - Updated [`GEMINI.md`](GEMINI.md), [`ARCHITECTURE.md`](ARCHITECTURE.md), [`README.md`](README.md), [`harness/harness_context.md`](harness/harness_context.md), and the 4-part blog series in `/home/dazbo/localdev/blogs-and-whitepapers/articles/harness-engineering-with-google/`.

@@ -154,7 +154,7 @@ Because the harness is built on standard **Google Agent Development Kit (`google
 - **Dedicated Per-Panel & Global Metrics**: Real-time token counts, estimated dollar costs ($), and rubric scores displayed on each agent panel, alongside combined global counters in the top banner.
 - **Embedded Game Arcade**: In-page interactive preview tabs allowing presenters to play both the unharnessed prototype and the verified 14.0 / 14.0 harnessed game.
 - **Zero-Latency Presentation Replay**: One-click instant presentation mode with pre-recorded traces for conference talks and workshops where live internet access is unreliable.
-- **Automated CI Quality & Golden Test Gates**: GitHub Actions workflows ([`.github/workflows/pr-checks.yml`](.github/workflows/pr-checks.yml) and [`.github/workflows/gemini-review.yml`](.github/workflows/gemini-review.yml)) run `codespell`, `ruff`, `pyright`, the 38-test golden suite, and automated Gemini PR code reviews on every pull request.
+- **Automated CI Quality & Golden Test Gates**: GitHub Actions workflows ([`.github/workflows/pr-checks.yml`](.github/workflows/pr-checks.yml) and [`.github/workflows/gemini-review.yml`](.github/workflows/gemini-review.yml)) run `codespell`, `ruff`, `pyright`, the 41-test golden suite, and automated Gemini PR code reviews on every pull request.
 - **Deployable to Google Cloud Run**: Containerised on Python 3.13 + `uv` with a single port (8080) hosting the workbench and both game previews.
 
 ## Getting Started
@@ -222,7 +222,7 @@ Open your browser to:
 | `make lint` | Run the full static quality suite (`codespell`, `ruff check`, and `pyright`) |
 | `make lint-fix` | Auto-fix lint and formatting issues with `ruff check --fix .` and check spelling |
 | `make typecheck` | Run `pyright` static type analysis |
-| `make test` | Run the independent 38-test golden acceptance suite (`pytest golden_tests/ -v`) |
+| `make test` | Run the independent 41-test golden acceptance suite (`pytest golden_tests/ -v`) |
 | `make verify` | Run end-to-end offline pipeline and rubric verification (`verify_demo.py`) |
 | `make docker-build` | Build the production `harness-engineering-demo` Docker container image |
 | `make docker-run` | Run the production Docker container locally on port `8080` |
