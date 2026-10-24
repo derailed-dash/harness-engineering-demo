@@ -52,6 +52,7 @@ from app.config import (
     DEFAULT_MODEL,
     FAST_DEMO_MODE,
     MAX_ITERATIONS,
+    MAX_OUTPUT_TOKENS,
     PLATEAU_LIMIT,
     load_harness_context,
     load_harness_skill_catalog,
@@ -187,13 +188,13 @@ def create_builder_agent(
     """
     gen_config = types.GenerateContentConfig(
         temperature=0.2,
-        max_output_tokens=2048,
+        max_output_tokens=MAX_OUTPUT_TOKENS,
         # Use LOW thinking level on Gemini 3.8 Flash so each loop iteration responds in
         # ~8-12s rather than spending 30s+ generating thousands of internal thought tokens.
         # Iterative reasoning is handled externally by the ADK LoopAgent + Living Memory.
         thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
         http_options=types.HttpOptions(
-            timeout=15_000,
+            timeout=60_000,
             retry_options=types.HttpRetryOptions(attempts=1),
         ),
     )
@@ -202,6 +203,10 @@ def create_builder_agent(
         # so the Builder Agent generates an architectural/remediation plan (~512 tokens)
         # quickly without hitting Vertex AI deadline limits.
         gen_config.max_output_tokens = 512
+        gen_config.http_options = types.HttpOptions(
+            timeout=25_000,
+            retry_options=types.HttpRetryOptions(attempts=1),
+        )
         gen_config.tool_config = types.ToolConfig(
             function_calling_config=types.FunctionCallingConfig(
                 mode=types.FunctionCallingConfigMode.NONE

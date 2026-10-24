@@ -32,7 +32,7 @@ def _get_cached_adc() -> tuple[Any, str | None]:
     return _CACHED_ADC
 
 
-def _build_ipv4_http_options(timeout_ms: int = 20_000) -> types.HttpOptions:
+def _build_ipv4_http_options(timeout_ms: int = 90_000) -> types.HttpOptions:
     """Bind httpx sync and async transports to IPv4 (0.0.0.0) with a bounded timeout and single-attempt fail-fast.
 
     In WSL2, dual-stack DNS resolution for `*.googleapis.com` often attempts an IPv6 (`AAAA`)

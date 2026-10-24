@@ -18,7 +18,8 @@ load_dotenv(BASE_DIR / ".env")
 DEFAULT_MODEL = "gemini-3.8-flash"
 MODEL_NAME = os.getenv("MODEL_NAME", DEFAULT_MODEL)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-MAX_OUTPUT_TOKENS = int(os.getenv("MAX_OUTPUT_TOKENS", "32768"))
+# Default output token limit on gemini-3.8-flash via google-genai SDK is 65,536 (64K).
+MAX_OUTPUT_TOKENS = int(os.getenv("MAX_OUTPUT_TOKENS", "65536"))
 
 # Server configuration
 HOST = os.getenv("HOST", "0.0.0.0")
