@@ -9,7 +9,7 @@
   - Always call Track 1 **"Unharnessed (Single Pass)"** or **"Unharnessed (Vibe Coding)"**.
   - Track 1 ([`app/agents/unharnessed.py`](app/agents/unharnessed.py)) represents prompting the raw LLM directly with the specification in a single pass via a bare Google ADK `Agent(instruction="", tools=[])` without engineering guardrails, active skills, unit tests, or iterative self-healing loops.
 - **Track 2 is "Harnessed Loop"**:
-  - Track 2 ([`app/agents/harnessed.py`](app/agents/harnessed.py) & [`app/agents/tools.py`](app/agents/tools.py)) represents Harness Engineering implemented via a Google ADK `LoopAgent`: specialised skills, test-driven development (TDD), living memory persistence, linting feedback, and autonomous multi-turn self-healing gated by `RubricEvaluationGateAgent(BaseAgent)`.
+  - Track 2 ([`app/agents/agent.py`](app/agents/agent.py), [`app/agents/harnessed.py`](app/agents/harnessed.py) & [`app/agents/tools.py`](app/agents/tools.py)) represents Harness Engineering implemented via a Google ADK `LoopAgent`: specialised skills, test-driven development (TDD), living memory persistence, linting feedback, and autonomous multi-turn self-healing gated by `RubricEvaluationGateAgent(BaseAgent)`.
 
 ### 2. Specification & Context Architecture
 
@@ -18,8 +18,9 @@
   - Both Track 1 (Unharnessed) and Track 2 (Harnessed) receive and consume this exact same specification file.
   - Required output deliverables are declared directly in Section 3.4 of `specs/cosmic_conquest_spec.md`.
   - **No extra context in code**: Neither `unharnessed.py` nor `harnessed.py` may inject hidden application context, instructions, or requirements not present in the external files.
-- **Persona & Harness Instructions**:
+- **Persona, Harness Instructions & Rubric**:
   - Persona instructions, role definitions, and engineering guardrails belong exclusively in `harness/harness_context.md`.
+  - Semantic evaluation rubric criteria (2.1–2.6) live declaratively in `harness/RUBRIC.md`.
   - Track 1 (Unharnessed) receives NO persona and NO additional harness context.
 
 ### 3. Living Memory Ledger

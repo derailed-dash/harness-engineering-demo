@@ -85,8 +85,9 @@ harness-engineering-demo/
 ├── .github/workflows/          # Automated PR quality & test suite, Gemini PR review & issue triage GitHub Actions
 ├── app/                        # Layer 1: Core engine, orchestrator, rubric evaluation, token tracking, templates, static assets
 │   ├── agents/                 # Google ADK agent pipelines and reusable harness tools
+│   │   ├── agent.py            # Pure ADK agent definitions (create_builder_agent, RubricEvaluationGateAgent, root_agent)
 │   │   ├── unharnessed.py      # Track 1: Unharnessed (Single Pass) bare ADK Agent & Runner
-│   │   ├── harnessed.py        # Track 2: Harnessed ADK LoopAgent, Builder LlmAgent, and RubricEvaluationGateAgent
+│   │   ├── harnessed.py        # Track 2: Harnessed ADK Runner, SSE streaming pipeline, and offline fallback
 │   │   ├── tools.py            # Reusable ADK FunctionTools (activate_skill, write/read file, pytest, ruff)
 │   │   └── baselines.py        # Deterministic synthetic workspace builders for offline verification
 │   ├── replay/                 # Pre-recorded presentation player and replay_data.json
@@ -98,13 +99,14 @@ harness-engineering-demo/
 │   ├── main.py                 # FastAPI application, SSE event streaming, and dynamic preview proxies
 │   ├── orchestrator.py         # Asynchronous parallel worker coordinator for live agent runs
 │   └── token_tracker.py        # Token telemetry, cost estimation ($), and metric accumulation
-├── harness/                    # Layer 1: Harness guardrails, skills, and living memory
+├── harness/                    # Layer 1: Harness guardrails, rubric, skills, and living memory
 │   ├── harness_context.md      # Reusable harness policies, persona, and tool protocol (how to engineer it)
+│   ├── RUBRIC.md               # Declarative semantic evaluation criteria (2.1–2.6) for LLM-as-a-Judge
 │   ├── skills/                 # Agent skills (test-driven-development, api-and-interface-design, gemini-api-dev)
 │   └── output/LIVING_MEMORY.md # Dynamic living memory ledger and failure feedback log
 ├── specs/                      # Task specifications
 │   └── cosmic_conquest_spec.md # Shared application specification (what to build)
-├── golden_tests/               # Independent 38-test acceptance suite validating workspaces, UI, and ADK agents
+├── golden_tests/               # Independent 41-test acceptance suite validating workspaces, UI, and ADK agents
 ├── snapshots/                  # Layer 1: Version-controlled reference snapshots backing presentation replay
 │   ├── unharnessed/            # Reference unharnessed prototype snapshot (~9.0 / 14.0)
 │   └── harnessed/              # Reference verified harnessed candidate snapshot (14.0 / 14.0)
@@ -128,19 +130,19 @@ Because the harness is built on standard **Google Agent Development Kit (`google
 
 | Component | File(s) | Portability | What You Do When Lifting |
 |:---|:---|:---|:---|
-| **ADK Workspace Tools** | [`app/agents/tools.py`](app/agents/tools.py) | **100% Portable** | Copy as-is. `activate_skill`, `write_workspace_file`, `read_workspace_file`, `run_pytest`, and `run_ruff_check` operate dynamically on `tool_context.state["workspace_dir"]`. |
-| **ADK Loop & Gate Agent** | [`app/agents/harnessed.py`](app/agents/harnessed.py) | **95% Portable** | Copy `build_harness_instruction`, `create_builder_agent`, `RubricEvaluationGateAgent`, and `create_harness_loop_agent`. Remove the demo-only offline snapshot fallback (`baselines.py`). |
+| **ADK Workspace Tools** | [`app/agents/tools.py`](app/agents/tools.py) | **100% Portable** | Copy as-is. `activate_skill`, `write_workspace_file`, `read_workspace_file`, `run_pytest`, and `run_ruff_check` operate dynamically on `tool_context.state["workspace_path"]`. |
+| **ADK Loop & Gate Agent** | [`app/agents/agent.py`](app/agents/agent.py) | **100% Portable** | Copy `build_harness_instruction`, `create_builder_agent`, `RubricEvaluationGateAgent`, `create_harness_loop_agent`, and `root_agent` (set `FAST_DEMO_MODE=false` for full autonomous tool calling). |
 | **Auth & Model Factory** | [`app/client_factory.py`](app/client_factory.py) | **100% Portable** | Copy as-is for automatic Google Cloud ADC (Vertex AI) and `GEMINI_API_KEY` dual-mode resolution. |
-| **Engineering Guardrails & Skills** | [`harness/harness_context.md`](harness/harness_context.md), [`harness/skills/`](harness/skills/) | **100% Portable** | Copy as-is for Python 3.13 / FastAPI / TDD projects, or drop new `SKILL.md` folders into `harness/skills/` (discovered automatically from frontmatter). |
-| **Evaluation Rubric** | [`app/rubric/mechanical.py`](app/rubric/mechanical.py), [`app/rubric/evaluator.py`](app/rubric/evaluator.py) | **Pluggable Gate** | Keep universal mechanical checks (`pytest`, `ruff`, PEP 585 AST, input safety, tool trajectory) and replace the domain-specific checks (1.6–1.8 and Tier 2 prompts) with your project's acceptance criteria. |
+| **Engineering Guardrails, Rubric & Skills** | [`harness/harness_context.md`](harness/harness_context.md), [`harness/RUBRIC.md`](harness/RUBRIC.md), [`harness/skills/`](harness/skills/) | **100% Portable** | Copy as-is for Python 3.13 / FastAPI / TDD projects, customise [`harness/RUBRIC.md`](harness/RUBRIC.md), or drop new `SKILL.md` folders into `harness/skills/` (discovered automatically from frontmatter). |
+| **Evaluation Rubric** | [`app/rubric/mechanical.py`](app/rubric/mechanical.py), [`app/rubric/evaluator.py`](app/rubric/evaluator.py) | **Pluggable Gate** | Keep universal mechanical checks (`pytest`, `ruff`, PEP 585 AST, input safety, tool trajectory) and replace the domain-specific checks (1.6–1.8 and [`harness/RUBRIC.md`](harness/RUBRIC.md)) with your project's acceptance criteria. |
 | **Task Specification** | [`specs/cosmic_conquest_spec.md`](specs/cosmic_conquest_spec.md) | **Project-Specific** | Replace with your own feature specification or PRD. |
 
 ### Minimal 4-Step Adaptation Guide
 
-1. **Copy the Core Harness Package**: Copy [`app/agents/tools.py`](app/agents/tools.py), [`app/agents/harnessed.py`](app/agents/harnessed.py), [`app/client_factory.py`](app/client_factory.py), and the [`harness/`](harness/) directory into your project.
+1. **Copy the Core Harness Package**: Copy [`app/agents/tools.py`](app/agents/tools.py), [`app/agents/agent.py`](app/agents/agent.py), [`app/client_factory.py`](app/client_factory.py), and the [`harness/`](harness/) directory into your project.
 2. **Define Your Goal Specification**: Write your target feature or application requirements in a Markdown spec file (e.g. `specs/my_feature_spec.md`).
-3. **Plug In Your Evaluation Gate**: Point `RubricEvaluationGateAgent` at your own `evaluate_workspace(workspace_dir, tool_trace)` function (keeping `pytest` and `ruff` mechanical gates, and customising any domain-specific checks).
-4. **Initialise Session State & Run**: Create an `InMemorySessionService` session populated with `workspace_dir`, `harness_context`, and `available_skills`, then invoke `Runner.run_async()` with `create_harness_loop_agent()`.
+3. **Plug In Your Evaluation Gate**: Point `RubricEvaluationGateAgent` at your own `evaluate_workspace(workspace_path, trajectory)` function and update [`harness/RUBRIC.md`](harness/RUBRIC.md) (keeping `pytest` and `ruff` mechanical gates, and customising any domain-specific checks).
+4. **Initialise Session State & Run**: Create an `InMemorySessionService` session populated with `workspace_path` and `harness_context`, then invoke `Runner.run_async()` with `create_harness_loop_agent(fast_demo_mode=False)` (or run via `adk web` / `adk run`).
 
 ---
 

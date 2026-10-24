@@ -692,6 +692,13 @@ const DOC_CONFIGS = {
         dataId: 'harness-context-data',
         footerNote: '<i class="fa-solid fa-shield-halved" style="color:var(--accent-green);"></i> Persistent workspace instructions (GEMINI.md) defining PEP 585 typing, mandatory TDD, Pydantic contracts, and UI wiring.',
     },
+    rubric: {
+        title: 'harness/RUBRIC.md',
+        subtitle: 'Declarative Semantic Evaluation Rubric (Criteria 2.1–2.6)',
+        iconClass: 'fa-solid fa-scale-balanced modal-icon',
+        dataId: 'rubric-content-data',
+        footerNote: '<i class="fa-solid fa-clipboard-check" style="color:var(--accent-cyan);"></i> Single source of truth for the Tier 2 LLM-as-a-Judge semantic evaluation criteria.',
+    },
 
     'test-driven-development': {
         title: 'harness/skills/test-driven-development/SKILL.md',
@@ -799,6 +806,15 @@ function openHarnessContextModal() {
     window.addEventListener('keydown', handleSpecModalKeydown);
 }
 
+function openRubricModal() {
+    displayDocument('rubric');
+    const modal = document.getElementById('spec-modal');
+    if (!modal) return;
+
+    modal.classList.add('open');
+    window.addEventListener('keydown', handleSpecModalKeydown);
+}
+
 function openSkillModal(skillName) {
     displayDocument(skillName);
     const modal = document.getElementById('spec-modal');
@@ -837,6 +853,8 @@ function openLivingMemoryModal() {
 function openDocModal(docType) {
     if (docType === 'harness_context') {
         openHarnessContextModal();
+    } else if (docType === 'rubric') {
+        openRubricModal();
     } else if (docType === 'living_memory') {
         openLivingMemoryModal();
     } else if (docType in DOC_CONFIGS) {

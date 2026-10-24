@@ -20,6 +20,10 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
+from app.agents.agent import (
+    materialise_builder_output_callback,
+    root_agent,
+)
 from app.agents.baselines import (
     _apply_harnessed_self_healing_iteration_2,
     _write_harnessed_iteration_1,
@@ -59,6 +63,9 @@ def test_unharnessed_agent_is_bare_adk_agent() -> None:
 
 def test_harnessed_loop_agent_structure() -> None:
     """Verify Track 2 creates an ADK LoopAgent with builder LlmAgent and RubricEvaluationGateAgent."""
+    assert isinstance(root_agent, LoopAgent)
+    assert root_agent.name == "harness_engineering_loop"
+
     loop_agent = create_harness_loop_agent(model=DEFAULT_MODEL, max_iterations=5)
     assert isinstance(loop_agent, LoopAgent)
     assert loop_agent.name == "harness_engineering_loop"
@@ -69,10 +76,16 @@ def test_harnessed_loop_agent_structure() -> None:
     assert isinstance(builder, Agent)
     assert builder.name == "harnessed_builder_agent"
     assert len(builder.tools) == len(HARNESS_TOOLS)
+    assert builder.after_agent_callback is materialise_builder_output_callback
 
     assert isinstance(gate, RubricEvaluationGateAgent)
     assert isinstance(gate, BaseAgent)
     assert gate.name == "rubric_evaluation_gate"
+
+    # Verify fast_demo_mode=False enables autonomous tool calling (no FunctionCallingConfigMode.NONE)
+    autonomous_builder = create_builder_agent(model=DEFAULT_MODEL, fast_demo_mode=False)
+    assert autonomous_builder.generate_content_config is not None
+    assert autonomous_builder.generate_content_config.tool_config is None
 
 
 def test_builder_instruction_provider_uses_external_harness_context() -> None:
@@ -122,11 +135,12 @@ def test_adk_harness_tools_execution(tmp_path: Path) -> None:
     }
     ctx = _StubToolContext(state)
 
-    # 1. Activate skill
+    # 1. Activate skill (and verify skills_context is populated for dynamic instruction injection)
     skill_res = activate_skill("test-driven-development", ctx)  # type: ignore[arg-type]
     assert skill_res["status"] == "ok"
     assert "RED" in skill_res["instructions"]
     assert "test-driven-development" in state["activated_skills"]
+    assert "## Skill: test-driven-development" in state["skills_context"]
 
     # 1b. Guard against running pytest/ruff on an empty workspace
     empty_pytest = run_pytest(ctx)  # type: ignore[arg-type]
@@ -234,4 +248,29 @@ async def test_rubric_evaluation_gate_agent_escalation(tmp_path: Path, monkeypat
     mem_text = memory_file.read_text(encoding="utf-8")
     assert "Iteration 1" in mem_text
     assert "Iteration 2" in mem_text
+
+
+def test_materialise_builder_output_callback_fast_demo_mode(tmp_path: Path) -> None:
+    """Verify materialise_builder_output_callback decouples demo file creation from the rubric gate."""
+    ws_dir = tmp_path / "callback_ws"
+    state: dict[str, Any] = {
+        "workspace_path": str(ws_dir),
+        "iteration": 0,
+        "fast_demo_mode": True,
+        "files_modified_in_iteration": [],
+    }
+    ctx = _StubToolContext(state)
+
+    # Iteration 1 callback populates initial TDD scaffold
+    res1 = materialise_builder_output_callback(ctx)  # type: ignore[arg-type]
+    assert res1 is None
+    assert "tests/test_game.py" in state["files_modified_in_iteration"]
+    assert (ws_dir / "tests" / "test_game.py").is_file()
+
+    # Iteration 2 callback applies self-healing UI upgrade
+    state["iteration"] = 1
+    state["files_modified_in_iteration"] = []
+    res2 = materialise_builder_output_callback(ctx)  # type: ignore[arg-type]
+    assert res2 is None
+    assert "static/index.html" in state["files_modified_in_iteration"]
 
