@@ -300,25 +300,21 @@ class RubricEvaluationGateAgent(BaseAgent):
                 "All rubric criteria satisfied cleanly (100% pass rate). "
                 "Escalating to terminate autonomous loop."
             )
-            living_memory_feedback = ""
         elif is_plateau:
             stop_reason = "plateau_reached"
             strategy_notes = (
                 f"Score plateaued at {current_score:.1f}/{scorecard['max_score']:.1f} "
                 f"over {self.plateau_limit} consecutive turns. Stopping loop."
             )
-            living_memory_feedback = str(scorecard["diagnostics"])
         elif iteration >= self.max_iterations:
             stop_reason = "max_iterations_reached"
             strategy_notes = f"Maximum iteration budget ({self.max_iterations}) reached."
-            living_memory_feedback = str(scorecard["diagnostics"])
         else:
             stop_reason = "continue_self_healing"
             strategy_notes = (
                 "Evaluator flagged failed criteria. Reinjecting failure diagnostics "
                 f"into Iteration {iteration + 1} context for targeted self-healing."
             )
-            living_memory_feedback = str(scorecard["diagnostics"])
 
         # Persist iteration telemetry to LIVING_MEMORY.md and feed the distilled
         # Iteration Evidence Receipt directly into living_memory_feedback for the next turn
