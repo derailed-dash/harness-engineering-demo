@@ -1,5 +1,11 @@
 # Cosmic Conquest: Harness Engineering Demo Guidelines
 
+## Mandatory Reading
+
+- Read my associated blog article: https://dev.to/gde/loop-engineering-in-the-harness-autonomous-self-correcting-systems-part-2-155e
+- README.md
+- TODO.md
+
 ## Core Principles & Vocabulary Standards
 
 ### 1. Track Terminology Standards

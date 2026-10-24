@@ -5,6 +5,7 @@ Architectural Integrity, Error Clarity, and Design Documentation Rationale.
 """
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -167,7 +168,16 @@ def run_semantic_tier(workspace_path: Path, token_tracker: TokenMetrics | None =
     html_file = workspace_path / "static" / "index.html"
     if html_file.is_file():
         try:
-            code_snippets.append(f"--- File: static/index.html ---\n{html_file.read_text(encoding='utf-8')}\n")
+            raw_html = html_file.read_text(encoding="utf-8")
+            # Strip large <style>...</style> CSS blocks so the semantic judge focuses on
+            # HTML structure, <canvas>, and JavaScript progression logic without bloating tokens.
+            compact_html = re.sub(
+                r"<style\b[^>]*>.*?</style>",
+                "<style>/* CSS omitted for semantic evaluation */</style>",
+                raw_html,
+                flags=re.DOTALL | re.IGNORECASE,
+            )
+            code_snippets.append(f"--- File: static/index.html ---\n{compact_html}\n")
         except Exception:
             pass
 
@@ -195,6 +205,10 @@ def run_semantic_tier(workspace_path: Path, token_tracker: TokenMetrics | None =
                     temperature=0.1,
                     max_output_tokens=2048,
                     thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
+                    http_options=types.HttpOptions(
+                        timeout=10_000,
+                        retry_options=types.HttpRetryOptions(attempts=1),
+                    ),
                 ),
             )
             

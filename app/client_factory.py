@@ -6,8 +6,10 @@ when ADC is unavailable.
 """
 
 import os
+import ssl
 from typing import Any
 
+import certifi
 import google.auth
 import httpx
 from google import genai
@@ -30,11 +32,31 @@ def _get_cached_adc() -> tuple[Any, str | None]:
     return _CACHED_ADC
 
 
-def _build_ipv4_http_options() -> types.HttpOptions:
-    """Bind httpx sync and async transports to IPv4 (0.0.0.0) to prevent IPv6 blackhole stalls."""
+def _build_ipv4_http_options(timeout_ms: int = 20_000) -> types.HttpOptions:
+    """Bind httpx sync and async transports to IPv4 (0.0.0.0) with a bounded timeout and single-attempt fail-fast.
+
+    In WSL2, dual-stack DNS resolution for `*.googleapis.com` often attempts an IPv6 (`AAAA`)
+    connection first, which silently blackholes until the OS TCP SYN timeout (~130s).
+    Binding `local_address="0.0.0.0"` forces immediate IPv4 routing, while passing explicit
+    `certifi` SSL verification and `httpx.Timeout` on the transports prevents infinite hangs.
+    """
+    timeout_sec = max(timeout_ms / 1000.0, 5.0)
+    httpx_timeout = httpx.Timeout(timeout_sec, connect=5.0)
+    ssl_ctx = ssl.create_default_context(
+        cafile=os.environ.get("SSL_CERT_FILE", certifi.where()),
+        capath=os.environ.get("SSL_CERT_DIR"),
+    )
     return types.HttpOptions(
-        client_args={"transport": httpx.HTTPTransport(local_address="0.0.0.0")},
-        async_client_args={"transport": httpx.AsyncHTTPTransport(local_address="0.0.0.0")},
+        timeout=timeout_ms,
+        retry_options=types.HttpRetryOptions(attempts=1),
+        client_args={
+            "transport": httpx.HTTPTransport(local_address="0.0.0.0", verify=ssl_ctx),
+            "timeout": httpx_timeout,
+        },
+        async_client_args={
+            "transport": httpx.AsyncHTTPTransport(local_address="0.0.0.0", verify=ssl_ctx),
+            "timeout": httpx_timeout,
+        },
     )
 
 

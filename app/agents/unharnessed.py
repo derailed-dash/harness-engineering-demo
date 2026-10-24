@@ -25,7 +25,7 @@ from app.agents.baselines import (
     _extract_and_write_files,
 )
 from app.client_factory import get_adk_gemini_model
-from app.config import MAX_OUTPUT_TOKENS, load_cosmic_conquest_spec
+from app.config import load_cosmic_conquest_spec
 from app.rubric.evaluator import evaluate_candidate_workspace
 from app.token_tracker import TokenMetrics
 
@@ -59,7 +59,12 @@ def create_unharnessed_agent(model: Gemini | str) -> Agent:
         tools=[],
         generate_content_config=types.GenerateContentConfig(
             temperature=0.2,
-            max_output_tokens=MAX_OUTPUT_TOKENS,
+            max_output_tokens=4096,
+            thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
+            http_options=types.HttpOptions(
+                timeout=18_000,
+                retry_options=types.HttpRetryOptions(attempts=1),
+            ),
         ),
     )
 

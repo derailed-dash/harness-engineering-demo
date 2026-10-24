@@ -192,8 +192,16 @@ def create_builder_agent(
         # ~8-12s rather than spending 30s+ generating thousands of internal thought tokens.
         # Iterative reasoning is handled externally by the ADK LoopAgent + Living Memory.
         thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
+        http_options=types.HttpOptions(
+            timeout=15_000,
+            retry_options=types.HttpRetryOptions(attempts=1),
+        ),
     )
     if fast_demo_mode:
+        # In fast_demo_mode, materialise_builder_output_callback handles workspace files,
+        # so the Builder Agent generates an architectural/remediation plan (~512 tokens)
+        # quickly without hitting Vertex AI deadline limits.
+        gen_config.max_output_tokens = 512
         gen_config.tool_config = types.ToolConfig(
             function_calling_config=types.FunctionCallingConfig(
                 mode=types.FunctionCallingConfigMode.NONE
