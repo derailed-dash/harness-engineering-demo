@@ -11,7 +11,7 @@ from typing import Any
 from google.genai import types
 
 from app.client_factory import get_genai_client
-from app.config import DEFAULT_MODEL, MAX_OUTPUT_TOKENS, MODEL_NAME, load_harness_rubric
+from app.config import DEFAULT_MODEL, MODEL_NAME, load_harness_rubric
 from app.token_tracker import TokenMetrics
 
 SEMANTIC_RUBRIC_PROMPT = load_harness_rubric()
@@ -193,8 +193,8 @@ def run_semantic_tier(workspace_path: Path, token_tracker: TokenMetrics | None =
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     temperature=0.1,
-                    max_output_tokens=MAX_OUTPUT_TOKENS,
-                    thinking_config=types.ThinkingConfig(thinking_budget=0),
+                    max_output_tokens=2048,
+                    thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
                 ),
             )
             

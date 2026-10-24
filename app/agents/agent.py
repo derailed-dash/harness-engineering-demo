@@ -48,7 +48,6 @@ from app.agents.tools import (
     run_pytest,
     run_ruff_check,
 )
-from app.client_factory import get_adk_gemini_model
 from app.config import (
     DEFAULT_MODEL,
     FAST_DEMO_MODE,
@@ -189,10 +188,10 @@ def create_builder_agent(
     gen_config = types.GenerateContentConfig(
         temperature=0.2,
         max_output_tokens=2048,
-        # Disable extended thinking budget so Gemini 3.8 Flash responds in ~10-15s per
-        # loop iteration rather than spending 30s+ in internal chain-of-thought.
+        # Use LOW thinking level on Gemini 3.8 Flash so each loop iteration responds in
+        # ~8-12s rather than spending 30s+ generating thousands of internal thought tokens.
         # Iterative reasoning is handled externally by the ADK LoopAgent + Living Memory.
-        thinking_config=types.ThinkingConfig(thinking_budget=0),
+        thinking_config=types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW),
     )
     if fast_demo_mode:
         gen_config.tool_config = types.ToolConfig(
@@ -380,8 +379,7 @@ def create_harness_loop_agent(
 
 def _create_default_root_agent() -> LoopAgent:
     """Initialise the module-level `root_agent` for ADK CLI discovery (`adk web`, `adk run`)."""
-    adk_model, _ = get_adk_gemini_model()
-    return create_harness_loop_agent(model=adk_model or DEFAULT_MODEL)
+    return create_harness_loop_agent(model=DEFAULT_MODEL)
 
 
 root_agent: LoopAgent = _create_default_root_agent()
