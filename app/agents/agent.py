@@ -54,6 +54,7 @@ from app.config import (
     MAX_ITERATIONS,
     MAX_OUTPUT_TOKENS,
     PLATEAU_LIMIT,
+    RUBRIC_PATH,
     load_harness_context,
     load_harness_skill_catalog,
 )
@@ -221,6 +222,7 @@ def create_builder_agent(
         ),
         model=model,
         instruction=build_harness_instruction,
+        include_contents="none",
         tools=list(HARNESS_TOOLS),
         after_agent_callback=materialise_builder_output_callback,
         generate_content_config=gen_config,
@@ -242,6 +244,7 @@ class RubricEvaluationGateAgent(BaseAgent):
 
     max_iterations: int = MAX_ITERATIONS
     plateau_limit: int = PLATEAU_LIMIT
+    rubric_path: Path = RUBRIC_PATH
     living_memory_path: Path | None = None
 
     async def _run_async_impl(
@@ -268,11 +271,15 @@ class RubricEvaluationGateAgent(BaseAgent):
             ruff_result = await asyncio.to_thread(run_ruff_check, tool_ctx)  # type: ignore[arg-type]
 
         trajectory: list[dict[str, Any]] = list(ctx.session.state.get("tool_trajectory", []))
+        rubric_markdown = (
+            self.rubric_path.read_text(encoding="utf-8") if self.rubric_path.is_file() else None
+        )
 
         scorecard = await asyncio.to_thread(
             evaluate_candidate_workspace,
             workspace_path,
             trajectory=trajectory,
+            rubric_markdown=rubric_markdown,
         )
 
         # Track score history for plateau detection
@@ -317,15 +324,21 @@ class RubricEvaluationGateAgent(BaseAgent):
             )
             living_memory_feedback = str(scorecard["diagnostics"])
 
-        # Persist iteration telemetry to LIVING_MEMORY.md
+        # Persist iteration telemetry to LIVING_MEMORY.md and feed the distilled
+        # Iteration Evidence Receipt directly into living_memory_feedback for the next turn
+        previous_score = score_history[-2] if len(score_history) >= 2 else None
         memory_mgr = LivingMemoryManager(output_path=self.living_memory_path)
-        memory_mgr.record_iteration(
+        iteration_receipt = memory_mgr.record_iteration(
             iteration=iteration,
             max_iterations=self.max_iterations,
             scorecard=scorecard,
             actions_taken=modified_files,
             strategy_notes=strategy_notes,
+            previous_score=previous_score,
+            pytest_result=pytest_result,
+            ruff_result=ruff_result,
         )
+        living_memory_feedback = "" if is_passing else iteration_receipt
 
         state_delta: dict[str, Any] = {
             "iteration": iteration,
@@ -336,8 +349,15 @@ class RubricEvaluationGateAgent(BaseAgent):
         }
         ctx.session.state.update(state_delta)
 
+        gate_content = (
+            types.Content(role="user", parts=[types.Part.from_text(text=strategy_notes)])
+            if not should_stop
+            else None
+        )
+
         yield Event(
             author=self.name,
+            content=gate_content,
             custom_metadata={
                 "iteration": iteration,
                 "max_iterations": self.max_iterations,

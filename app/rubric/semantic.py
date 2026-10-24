@@ -152,7 +152,11 @@ def _evaluate_heuristic_fallback(workspace_path: Path) -> list[dict[str, Any]]:
     ]
 
 
-def run_semantic_tier(workspace_path: Path, token_tracker: TokenMetrics | None = None) -> list[dict[str, Any]]:
+def run_semantic_tier(
+    workspace_path: Path,
+    token_tracker: TokenMetrics | None = None,
+    rubric_markdown: str | None = None,
+) -> list[dict[str, Any]]:
     """Execute Tier 2 semantic analysis via Gemini LLM-as-a-Judge or heuristic fallback."""
     # Gather candidate code
     code_snippets: list[str] = []
@@ -193,7 +197,7 @@ def run_semantic_tier(workspace_path: Path, token_tracker: TokenMetrics | None =
     if client:
         try:
             model_to_use = MODEL_NAME or DEFAULT_MODEL
-            rubric_prompt = load_harness_rubric() or SEMANTIC_RUBRIC_PROMPT
+            rubric_prompt = rubric_markdown or load_harness_rubric() or SEMANTIC_RUBRIC_PROMPT
             response = client.models.generate_content(
                 model=model_to_use,
                 contents=[

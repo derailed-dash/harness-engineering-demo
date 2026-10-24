@@ -77,10 +77,13 @@ def test_harnessed_loop_agent_structure() -> None:
     assert builder.name == "harnessed_builder_agent"
     assert len(builder.tools) == len(HARNESS_TOOLS)
     assert builder.after_agent_callback is materialise_builder_output_callback
+    assert builder.include_contents == "none"
 
     assert isinstance(gate, RubricEvaluationGateAgent)
     assert isinstance(gate, BaseAgent)
     assert gate.name == "rubric_evaluation_gate"
+    assert gate.rubric_path.name == "RUBRIC.md"
+    assert gate.rubric_path.is_file()
 
     # Verify fast_demo_mode=False enables autonomous tool calling (no FunctionCallingConfigMode.NONE)
     autonomous_builder = create_builder_agent(model=DEFAULT_MODEL, fast_demo_mode=False)
@@ -226,6 +229,9 @@ async def test_rubric_evaluation_gate_agent_escalation(tmp_path: Path, monkeypat
     assert evt1.custom_metadata is not None
     assert evt1.custom_metadata["iteration"] == 1
     assert evt1.custom_metadata["scorecard"]["is_passing"] is False
+    feedback_it1 = evt1.actions.state_delta["living_memory_feedback"]
+    assert "Verification Receipt" in feedback_it1
+    assert "Next-Turn Remediation Targets" in feedback_it1
 
     # Now apply Iteration 2 self-healing so workspace achieves 14/14
     _apply_harnessed_self_healing_iteration_2(ws_dir)
@@ -248,6 +254,9 @@ async def test_rubric_evaluation_gate_agent_escalation(tmp_path: Path, monkeypat
     mem_text = memory_file.read_text(encoding="utf-8")
     assert "Iteration 1" in mem_text
     assert "Iteration 2" in mem_text
+    assert "Verification Receipt" in mem_text
+    assert "Score Delta" in mem_text
+    assert "Next-Turn Remediation Targets" in mem_text
 
 
 def test_materialise_builder_output_callback_fast_demo_mode(tmp_path: Path) -> None:

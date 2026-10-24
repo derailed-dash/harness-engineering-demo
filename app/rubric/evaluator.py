@@ -16,6 +16,7 @@ def evaluate_candidate_workspace(
     workspace_path: Path,
     trajectory: list[dict[str, Any]] | None = None,
     token_tracker: TokenMetrics | None = None,
+    rubric_markdown: str | None = None,
 ) -> dict[str, Any]:
     """Run full rubric on candidate workspace.
     
@@ -23,7 +24,11 @@ def evaluate_candidate_workspace(
     diagnostic feedback for the next loop iteration.
     """
     mechanical_checks = run_mechanical_tier(workspace_path, trajectory)
-    semantic_checks = run_semantic_tier(workspace_path, token_tracker)
+    semantic_checks = run_semantic_tier(
+        workspace_path,
+        token_tracker,
+        rubric_markdown=rubric_markdown,
+    )
     
     all_checks = mechanical_checks + semantic_checks
     total_score = sum(c["score"] for c in all_checks)
