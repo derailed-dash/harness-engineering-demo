@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cosmic Trivia &amp; Strategy Conquest</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cosmic Trivia & Strategy Conquest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-space: #050813;
-      --card-bg: rgba(13, 20, 38, 0.85);
-      --card-border: rgba(0, 240, 255, 0.25);
+      --bg-dark: #050814;
+      --panel-bg: rgba(10, 16, 35, 0.75);
+      --panel-border: rgba(0, 240, 255, 0.3);
       --cyan-glow: #00f0ff;
       --gold-glow: #ffd000;
-      --green-glow: #00ff88;
-      --red-glow: #ff2a55;
-      --dim-gray: #3a445d;
-      --font-cyber: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --red-alert: #ff2a5f;
+      --green-safe: #00ffaa;
+      --text-main: #e2e8f0;
+      --text-muted: #8492a6;
     }
 
     * {
@@ -25,16 +28,15 @@
     }
 
     body {
-      background-color: var(--bg-space);
-      color: #e2e8f0;
-      font-family: var(--font-cyber);
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Rajdhani', sans-serif;
       overflow-x: hidden;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
 
-    /* Ambient Space Starfield */
     #starfield {
       position: fixed;
       top: 0;
@@ -51,392 +53,471 @@
       display: flex;
       flex-direction: column;
       flex: 1;
-      max-width: 1280px;
+      padding: 16px 24px;
+      gap: 16px;
+      max-width: 1400px;
       margin: 0 auto;
-      padding: 1rem 1.5rem 2rem 1.5rem;
       width: 100%;
     }
 
-    /* Header & HUD */
+    /* HEADER & HUD */
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.8rem 1.2rem;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(12px);
       border-radius: 12px;
-      backdrop-filter: blur(10px);
+      padding: 14px 24px;
       box-shadow: 0 0 25px rgba(0, 240, 255, 0.1);
-      margin-bottom: 1.2rem;
     }
 
-    .brand {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .brand h1 {
-      font-size: 1.4rem;
+    .brand-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 900;
       letter-spacing: 2px;
-      text-transform: uppercase;
-      background: linear-gradient(90deg, var(--cyan-glow), #ffffff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      font-weight: 800;
-    }
-
-    .brand span {
-      font-size: 0.75rem;
-      color: #94a3b8;
-      letter-spacing: 1px;
-    }
-
-    .hud-metrics {
+      color: #fff;
+      text-shadow: 0 0 12px var(--cyan-glow);
       display: flex;
-      gap: 1.5rem;
       align-items: center;
+      gap: 10px;
     }
 
-    .metric-pod {
+    .brand-badge {
+      font-size: 0.65rem;
+      background: rgba(0, 240, 255, 0.2);
+      border: 1px solid var(--cyan-glow);
+      color: var(--cyan-glow);
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 1.5px;
+    }
+
+    .hud-stats {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .stat-pill {
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: flex-start;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      min-width: 90px;
     }
 
-    .metric-label {
-      font-size: 0.65rem;
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 1px;
-      color: #94a3b8;
     }
 
-    .metric-value {
-      font-size: 1.2rem;
+    .stat-value {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.15rem;
       font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 4px;
     }
 
-    .metric-shields { color: var(--cyan-glow); }
-    .metric-energy { color: var(--gold-glow); }
-    .metric-sectors { color: var(--green-glow); }
-    .metric-turn { color: #f8fafc; }
+    .shield-val { color: var(--cyan-glow); }
+    .energy-val { color: var(--gold-glow); }
+    .sector-val { color: var(--green-safe); }
+    .turn-val { color: #fff; }
 
     .btn-reset {
-      background: rgba(255, 42, 85, 0.15);
-      border: 1px solid var(--red-glow);
-      color: #fff;
-      padding: 0.5rem 1rem;
+      background: rgba(255, 42, 95, 0.15);
+      border: 1px solid var(--red-alert);
+      color: var(--red-alert);
+      padding: 8px 16px;
       border-radius: 6px;
+      font-family: 'Orbitron', sans-serif;
       font-size: 0.8rem;
       cursor: pointer;
-      font-weight: 600;
       letter-spacing: 1px;
-      text-transform: uppercase;
       transition: all 0.2s ease;
     }
 
     .btn-reset:hover {
-      background: var(--red-glow);
-      box-shadow: 0 0 15px var(--red-glow);
+      background: var(--red-alert);
+      color: #fff;
+      box-shadow: 0 0 15px var(--red-alert);
     }
 
-    /* Status Banner */
-    .terminal-banner {
-      display: none;
-      padding: 1rem;
-      border-radius: 8px;
-      margin-bottom: 1rem;
-      font-size: 0.95rem;
-      font-weight: 600;
-      text-align: center;
-      letter-spacing: 1px;
-    }
-    .banner-victory {
-      display: block;
-      background: rgba(0, 255, 136, 0.15);
-      border: 1px solid var(--green-glow);
-      color: var(--green-glow);
-      box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
-    }
-    .banner-defeat {
-      display: block;
-      background: rgba(255, 42, 85, 0.15);
-      border: 1px solid var(--red-glow);
-      color: var(--red-glow);
-      box-shadow: 0 0 20px rgba(255, 42, 85, 0.2);
+    /* MAIN CONTENT */
+    .gameplay-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 16px;
+      flex: 1;
     }
 
-    /* Star Map Canvas / SVG Area */
-    .starmap-section {
-      position: relative;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
+    @media (max-width: 1024px) {
+      .gameplay-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* MAP STYLES */
+    .map-container {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
       border-radius: 12px;
-      height: 480px;
-      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8);
+      position: relative;
       overflow: hidden;
-      margin-bottom: 1.5rem;
+      min-height: 540px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.8);
+    }
+
+    .map-header {
+      padding: 12px 18px;
+      background: rgba(0, 0, 0, 0.35);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .map-svg-wrap {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: 100%;
     }
 
     svg#starmap-svg {
       width: 100%;
       height: 100%;
+      display: block;
     }
 
-    .starmap-instruction {
-      position: absolute;
-      top: 15px;
-      left: 20px;
-      background: rgba(5, 8, 19, 0.7);
-      padding: 6px 14px;
-      border-radius: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      font-size: 0.8rem;
-      letter-spacing: 0.5px;
-      color: #94a3b8;
-      pointer-events: none;
+    .map-link {
+      stroke: rgba(255, 255, 255, 0.15);
+      stroke-width: 2.5;
+      stroke-dasharray: 6 4;
+      transition: stroke 0.3s ease;
     }
 
-    /* Sector Grid Cards below Star Map */
-    .sector-deck {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 1rem;
+    .map-link.active-link {
+      stroke: rgba(0, 240, 255, 0.6);
+      stroke-width: 3;
+      stroke-dasharray: none;
+      filter: drop-shadow(0 0 5px var(--cyan-glow));
     }
 
-    .sector-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 1.1rem;
+    .node-group {
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .node-group:hover {
+      transform: scale(1.08);
+    }
+
+    /* SIDEBAR */
+    .intel-sidebar {
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      transition: all 0.25s ease;
-      position: relative;
-      overflow: hidden;
+      gap: 16px;
     }
 
-    .sector-card.controlled {
-      border-color: var(--cyan-glow);
-      box-shadow: 0 0 15px rgba(0, 240, 255, 0.12);
+    .intel-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      backdrop-filter: blur(10px);
     }
 
-    .sector-card.target {
-      border-color: var(--gold-glow);
-      animation: pulse-border 1.8s infinite;
+    .intel-card h3 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.95rem;
+      letter-spacing: 1px;
+      color: var(--cyan-glow);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .sector-card.locked {
-      opacity: 0.5;
-      border-color: var(--dim-gray);
+    .log-feed {
+      font-size: 0.9rem;
+      color: var(--text-main);
+      background: rgba(0, 0, 0, 0.5);
+      padding: 12px;
+      border-radius: 8px;
+      border-left: 3px solid var(--cyan-glow);
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+      line-height: 1.4;
     }
 
-    @keyframes pulse-border {
-      0% { box-shadow: 0 0 5px rgba(255, 208, 0, 0.2); }
-      50% { box-shadow: 0 0 20px rgba(255, 208, 0, 0.45); }
-      100% { box-shadow: 0 0 5px rgba(255, 208, 0, 0.2); }
+    .sector-quick-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 380px;
+      overflow-y: auto;
     }
 
-    .card-top {
+    .sector-item {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 0.5rem;
+      align-items: center;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      transition: all 0.2s ease;
     }
 
-    .sector-title {
-      font-size: 1.05rem;
-      font-weight: 700;
-      letter-spacing: 0.5px;
+    .sector-item.controlled {
+      border-color: var(--green-safe);
+      background: rgba(0, 255, 170, 0.08);
     }
 
-    .sector-badge {
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-weight: 700;
-      letter-spacing: 1px;
-    }
-
-    .badge-controlled { background: rgba(0, 240, 255, 0.2); color: var(--cyan-glow); }
-    .badge-target { background: rgba(255, 208, 0, 0.2); color: var(--gold-glow); }
-    .badge-locked { background: rgba(58, 68, 93, 0.4); color: #94a3b8; }
-
-    .sector-theme {
-      font-size: 0.75rem;
-      color: #38bdf8;
-      margin-bottom: 0.4rem;
-      font-style: italic;
-    }
-
-    .sector-desc {
-      font-size: 0.82rem;
-      color: #94a3b8;
-      line-height: 1.35;
-      margin-bottom: 1rem;
-    }
-
-    .action-btn {
-      width: 100%;
-      padding: 0.65rem;
-      border: none;
-      border-radius: 6px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-size: 0.8rem;
+    .sector-item.valid-target {
+      border-color: var(--gold-glow);
+      background: rgba(255, 208, 0, 0.1);
       cursor: pointer;
-      transition: all 0.2s;
     }
 
-    .btn-attack {
-      background: linear-gradient(90deg, #ff9900, #ffd000);
+    .sector-item.valid-target:hover {
+      box-shadow: 0 0 15px rgba(255, 208, 0, 0.3);
+      transform: translateX(4px);
+    }
+
+    .sector-name-badge {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .sector-action-btn {
+      padding: 5px 10px;
+      font-size: 0.75rem;
+      font-family: 'Orbitron', sans-serif;
+      border-radius: 4px;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .btn-engage {
+      background: var(--gold-glow);
       color: #000;
-      box-shadow: 0 0 10px rgba(255, 208, 0, 0.3);
+      animation: pulse-glow 1.5s infinite alternate;
     }
 
-    .btn-attack:hover {
-      box-shadow: 0 0 20px rgba(255, 208, 0, 0.7);
-      transform: translateY(-1px);
+    @keyframes pulse-glow {
+      from { box-shadow: 0 0 6px var(--gold-glow); }
+      to { box-shadow: 0 0 18px var(--gold-glow); }
     }
 
-    .btn-disabled {
-      background: rgba(58, 68, 93, 0.4);
-      color: #64748b;
+    .btn-liberated {
+      background: rgba(0, 255, 170, 0.2);
+      color: var(--green-safe);
+      border: 1px solid var(--green-safe);
+      cursor: default;
+    }
+
+    .btn-locked {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       cursor: not-allowed;
     }
 
-    /* Modal Combat Dialogue */
-    .modal-backdrop {
-      display: none;
+    /* MODAL COMBAT DIALOGUE */
+    .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(3, 7, 18, 0.85);
+      background: rgba(0, 0, 0, 0.85);
       backdrop-filter: blur(8px);
       z-index: 100;
-      justify-content: center;
-      align-items: center;
-      padding: 1.5rem;
-    }
-
-    .modal-backdrop.open {
       display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
     }
 
-    .modal-window {
-      background: #090e1d;
-      border: 1px solid var(--cyan-glow);
-      box-shadow: 0 0 35px rgba(0, 240, 255, 0.25);
-      border-radius: 14px;
-      max-width: 650px;
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: #080f24;
+      border: 2px solid var(--gold-glow);
+      box-shadow: 0 0 40px rgba(255, 208, 0, 0.25);
+      border-radius: 16px;
       width: 100%;
-      padding: 1.8rem;
+      max-width: 620px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
       position: relative;
     }
 
-    .modal-header {
+    .modal-badge-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1rem;
-      border-bottom: 1px solid rgba(0, 240, 255, 0.2);
-      padding-bottom: 0.8rem;
     }
 
-    .modal-title {
-      font-size: 1.1rem;
-      color: var(--cyan-glow);
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      font-weight: 700;
-    }
-
-    .movie-source {
+    .modal-sector-tag {
+      font-family: 'Orbitron', sans-serif;
       font-size: 0.8rem;
       color: var(--gold-glow);
+      border: 1px solid var(--gold-glow);
+      padding: 4px 10px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+    }
+
+    .modal-movie-tag {
+      font-size: 0.85rem;
+      color: var(--cyan-glow);
       font-weight: 600;
-      background: rgba(255, 208, 0, 0.1);
-      padding: 3px 10px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 208, 0, 0.3);
     }
 
-    .trivia-question {
-      font-size: 1rem;
-      line-height: 1.5;
-      color: #f1f5f9;
-      margin-bottom: 1.4rem;
-      font-weight: 500;
+    .modal-question {
+      font-size: 1.15rem;
+      line-height: 1.45;
+      font-weight: 600;
+      color: #fff;
     }
 
-    .options-grid {
+    .modal-options-grid {
       display: grid;
-      gap: 0.75rem;
-      margin-bottom: 1.4rem;
+      grid-template-columns: 1fr;
+      gap: 10px;
     }
 
     .option-btn {
-      background: rgba(13, 20, 38, 0.9);
+      background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(0, 240, 255, 0.3);
-      color: #e2e8f0;
-      padding: 0.85rem 1rem;
       border-radius: 8px;
-      font-size: 0.9rem;
+      padding: 12px 16px;
+      color: #fff;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
       text-align: left;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 10px;
-      transition: all 0.2s;
+      gap: 12px;
+      transition: all 0.2s ease;
     }
 
-    .option-btn:hover:not(:disabled) {
-      border-color: var(--cyan-glow);
+    .option-btn:hover {
       background: rgba(0, 240, 255, 0.15);
+      border-color: var(--cyan-glow);
       transform: translateX(4px);
     }
 
-    .option-btn.selected-correct {
-      background: rgba(0, 255, 136, 0.2) !important;
-      border-color: var(--green-glow) !important;
-      color: #ffffff !important;
-    }
-
-    .option-btn.selected-wrong {
-      background: rgba(255, 42, 85, 0.2) !important;
-      border-color: var(--red-glow) !important;
-      color: #ffffff !important;
-    }
-
-    .combat-feedback {
-      display: none;
-      padding: 0.9rem;
-      border-radius: 8px;
-      font-size: 0.88rem;
-      line-height: 1.4;
-      margin-bottom: 1.2rem;
-    }
-    .combat-feedback.show { display: block; }
-    .combat-feedback.success {
-      background: rgba(0, 255, 136, 0.12);
-      border: 1px solid var(--green-glow);
-      color: var(--green-glow);
-    }
-    .combat-feedback.failure {
-      background: rgba(255, 42, 85, 0.12);
-      border: 1px solid var(--red-glow);
-      color: var(--red-glow);
-    }
-
-    .modal-actions {
+    .opt-letter {
+      background: rgba(0, 240, 255, 0.2);
+      color: var(--cyan-glow);
+      border-radius: 4px;
+      width: 26px;
+      height: 26px;
       display: flex;
-      justify-content: flex-end;
-      gap: 0.8rem;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.8rem;
+    }
+
+    /* RESULT MODAL & BANNER */
+    .banner-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(12px);
+      z-index: 150;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .banner-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .banner-card {
+      background: #080f24;
+      border-radius: 20px;
+      padding: 36px;
+      text-align: center;
+      max-width: 500px;
+      width: 100%;
+      border: 2px solid var(--cyan-glow);
+      box-shadow: 0 0 50px rgba(0, 240, 255, 0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .banner-card.defeat {
+      border-color: var(--red-alert);
+      box-shadow: 0 0 50px rgba(255, 42, 95, 0.3);
+    }
+
+    .banner-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2rem;
+      letter-spacing: 2px;
+      font-weight: 900;
+    }
+
+    .banner-desc {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .btn-action-large {
+      margin-top: 8px;
+      background: var(--cyan-glow);
+      color: #000;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1rem;
+      font-weight: 800;
+      padding: 12px 28px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      letter-spacing: 1.5px;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+      transition: transform 0.2s ease;
+    }
+
+    .btn-action-large:hover {
+      transform: scale(1.04);
     }
   </style>
 </head>
@@ -444,66 +525,93 @@
   <canvas id="starfield"></canvas>
 
   <div class="app-container">
+    <!-- Header HUD -->
     <header>
-      <div class="brand">
-        <h1>Cosmic Trivia Conquest</h1>
-        <span>Sol Fleet Tactical Liberation Network</span>
+      <div class="brand-title">
+        SOL FLEET <span style="font-weight: 400; color: var(--cyan-glow);">TACTICAL</span>
+        <span class="brand-badge">MK-IV CONQUEST</span>
       </div>
 
-      <div class="hud-metrics">
-        <div class="metric-pod">
-          <span class="metric-label">Shield Integrity</span>
-          <span class="metric-value metric-shields" id="hud-shields">100%</span>
+      <div class="hud-stats">
+        <div class="stat-pill">
+          <span class="stat-label">Shields</span>
+          <span class="stat-value shield-val" id="hud-shields">100%</span>
         </div>
-        <div class="metric-pod">
-          <span class="metric-label">Energy Core</span>
-          <span class="metric-value metric-energy" id="hud-energy">50 GW</span>
+        <div class="stat-pill">
+          <span class="stat-label">Energy</span>
+          <span class="stat-value energy-val" id="hud-energy">50</span>
         </div>
-        <div class="metric-pod">
-          <span class="metric-label">Liberated Sectors</span>
-          <span class="metric-value metric-sectors" id="hud-sectors">1 / 6</span>
+        <div class="stat-pill">
+          <span class="stat-label">Sectors</span>
+          <span class="stat-value sector-val" id="hud-sectors">1 / 6</span>
         </div>
-        <div class="metric-pod">
-          <span class="metric-label">Campaign Turn</span>
-          <span class="metric-value metric-turn" id="hud-turn">0</span>
+        <div class="stat-pill">
+          <span class="stat-label">Turn</span>
+          <span class="stat-value turn-val" id="hud-turns">0</span>
         </div>
-        <button class="btn-reset" onclick="resetGame()">Reset Fleet</button>
+        <button class="btn-reset" onclick="resetCampaign()">RESET</button>
       </div>
     </header>
 
-    <div id="terminal-banner" class="terminal-banner"></div>
-
-    <section class="starmap-section">
-      <div class="starmap-instruction">★ Tactical Map: Click any pulsing Gold target to launch assault directly.</div>
-      <svg id="starmap-svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet"></svg>
-    </section>
-
-    <section class="sector-deck" id="sector-deck"></section>
-  </div>
-
-  <!-- Combat Modal -->
-  <div class="modal-backdrop" id="combat-modal">
-    <div class="modal-window">
-      <div class="modal-header">
-        <span class="modal-title" id="combat-sector-name">Gatekeeper Encryption Breach</span>
-        <span class="movie-source" id="combat-movie-title">Movie Source</span>
+    <!-- Gameplay Main Layout -->
+    <div class="gameplay-layout">
+      <!-- Visual Map -->
+      <div class="map-container">
+        <div class="map-header">
+          <span>AI GATEKEEPER SECTOR TOPOLOGY</span>
+          <span id="target-summary" style="color: var(--gold-glow);">Awaiting Fleet Directive</span>
+        </div>
+        <div class="map-svg-wrap">
+          <svg id="starmap-svg" viewBox="0 0 1000 650" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
       </div>
-      <p class="trivia-question" id="combat-question">Loading cinematic frequency...</p>
 
-      <div class="options-grid" id="combat-options"></div>
+      <!-- Tactical Intel Sidebar -->
+      <div class="intel-sidebar">
+        <div class="intel-card">
+          <h3>LIBERATION TELEMETRY</h3>
+          <div class="log-feed" id="event-feed">
+            Awaiting battle directives. Engage adjacent sectors to advance.
+          </div>
+        </div>
 
-      <div class="combat-feedback" id="combat-feedback"></div>
-
-      <div class="modal-actions">
-        <button class="action-btn btn-attack" id="btn-modal-dismiss" style="display:none;" onclick="closeModal()">Continue Mission</button>
+        <div class="intel-card" style="flex: 1;">
+          <h3>SECTOR AFFORDANCES</h3>
+          <div class="sector-quick-list" id="sector-list">
+            <!-- Populated via JS -->
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
+  <!-- Combat Modal -->
+  <div class="modal-overlay" id="combat-modal">
+    <div class="modal-card">
+      <div class="modal-badge-row">
+        <span class="modal-sector-tag" id="combat-sector-tag">TARGET: LV-426</span>
+        <span class="modal-movie-tag" id="combat-movie-tag">Alien (1979)</span>
+      </div>
+      <div class="modal-question" id="combat-question">Loading AI Gatekeeper tactical query...</div>
+      <div class="modal-options-grid" id="combat-options">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Victory / Defeat Banner -->
+  <div class="banner-overlay" id="game-over-modal">
+    <div class="banner-card" id="banner-card">
+      <div class="banner-title" id="banner-title">VICTORY</div>
+      <div class="banner-desc" id="banner-desc">The AI Galaxy Gatekeeper has been defeated.</div>
+      <button class="btn-action-large" onclick="resetCampaign()">DEPLOY NEW CAMPAIGN</button>
+    </div>
+  </div>
+
   <script>
-    // --- Ambient Starfield Animation ---
-    const canvas = document.getElementById("starfield");
-    const ctx = canvas.getContext("2d");
+    // --- STARFIELD BACKGROUND ---
+    const canvas = document.getElementById('starfield');
+    const ctx = canvas.getContext('2d');
     let stars = [];
 
     function resizeCanvas() {
@@ -519,306 +627,264 @@
         stars.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          radius: Math.random() * 1.4 + 0.3,
-          speed: Math.random() * 0.2 + 0.05,
-          alpha: Math.random() * 0.7 + 0.3
+          radius: Math.random() * 1.5 + 0.3,
+          alpha: Math.random(),
+          speed: Math.random() * 0.015 + 0.005
         });
       }
     }
 
     function renderStarfield() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#ffffff";
-      for (const s of stars) {
-        ctx.globalAlpha = s.alpha;
+      for (let s of stars) {
+        s.alpha += s.speed;
+        if (s.alpha > 1 || s.alpha < 0) s.speed = -s.speed;
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(200, 230, 255, ${Math.abs(s.alpha)})`;
         ctx.fill();
-        s.y += s.speed;
-        if (s.y > canvas.height) s.y = 0;
       }
-      ctx.globalAlpha = 1.0;
       requestAnimationFrame(renderStarfield);
     }
 
-    window.addEventListener("resize", resizeCanvas);
+    window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
     renderStarfield();
 
-    // --- State and Interaction Layer ---
-    let localGameState = null;
+    // --- GAME CLIENT LOGIC ---
+    let currentGameState = null;
+    let catalog = {};
+    let topology = {};
     let currentTargetSector = null;
 
-    async function fetchGameState() {
+    async function loadInitialData() {
       try {
-        const res = await fetch("/api/game/state");
+        const res = await fetch('/api/game/state');
         const data = await res.json();
-        localGameState = data;
-        renderAll();
+        currentGameState = data.state;
+        catalog = data.sectors;
+        topology = data.topology;
+        renderMap();
+        updateHUD();
       } catch (err) {
-        console.error("Failed to fetch state:", err);
+        console.error("Initialization failure:", err);
       }
     }
 
-    function renderAll() {
-      if (!localGameState) return;
+    function updateHUD() {
+      if (!currentGameState) return;
+      document.getElementById('hud-shields').textContent = `${currentGameState.shields}%`;
+      document.getElementById('hud-shields').style.color = currentGameState.shields <= 35 ? 'var(--red-alert)' : 'var(--cyan-glow)';
+      document.getElementById('hud-energy').textContent = currentGameState.energy;
+      document.getElementById('hud-sectors').textContent = `${currentGameState.controlled_sectors.length} / ${Object.keys(catalog).length}`;
+      document.getElementById('hud-turns').textContent = currentGameState.turn_count;
+      document.getElementById('event-feed').textContent = currentGameState.last_event;
 
-      // Update HUD
-      document.getElementById("hud-shields").innerText = `${localGameState.shields}%`;
-      document.getElementById("hud-energy").innerText = `${localGameState.energy} GW`;
-      document.getElementById("hud-sectors").innerText = `${localGameState.controlled_sectors.length} / ${localGameState.total_sectors}`;
-      document.getElementById("hud-turn").innerText = localGameState.turn_count;
+      const validCount = currentGameState.valid_targets.length;
+      document.getElementById('target-summary').textContent = validCount > 0 
+        ? `${validCount} ATTACK VECTOR${validCount > 1 ? 'S' : ''} DETECTED` 
+        : `NO ATTACK VECTORS`;
 
-      // Status Banner
-      const banner = document.getElementById("terminal-banner");
-      if (localGameState.status === "VICTORY") {
-        banner.className = "terminal-banner banner-victory";
-        banner.innerText = "★ VICTORY: All galactic sectors secured. The Gatekeeper AI has been subdued!";
-      } else if (localGameState.status === "DEFEAT") {
-        banner.className = "terminal-banner banner-defeat";
-        banner.innerText = "☠ DEFEAT: Sol Fleet shields destroyed. Humanity fell to the Gatekeeper.";
+      renderSectorSidebar();
+      renderMap();
+
+      // Check Terminal Conditions
+      const banner = document.getElementById('game-over-modal');
+      const bannerCard = document.getElementById('banner-card');
+      const bannerTitle = document.getElementById('banner-title');
+      const bannerDesc = document.getElementById('banner-desc');
+
+      if (currentGameState.status === "VICTORY") {
+        bannerCard.className = "banner-card";
+        bannerTitle.textContent = "GALACTIC LIBERATION";
+        bannerTitle.style.color = "var(--green-safe)";
+        bannerDesc.textContent = "The Sol Fleet has successfully answered all AI Gatekeeper queries and secured all key strategic planetary sectors.";
+        banner.classList.add('open');
+      } else if (currentGameState.status === "DEFEAT") {
+        bannerCard.className = "banner-card defeat";
+        bannerTitle.textContent = "FLEET DESTROYED";
+        bannerTitle.style.color = "var(--red-alert)";
+        bannerDesc.textContent = "Flagship defensive shields suffered critical overload. The AI Gatekeeper retains absolute domination over the cosmos.";
+        banner.classList.add('open');
       } else {
-        banner.className = "terminal-banner";
-        banner.innerText = "";
-      }
-
-      renderStarMap();
-      renderSectorDeck();
-    }
-
-    function renderStarMap() {
-      const svg = document.getElementById("starmap-svg");
-      svg.innerHTML = "";
-
-      const meta = localGameState.sector_metadata;
-      const graph = localGameState.adjacency_graph;
-      const controlled = new Set(localGameState.controlled_sectors);
-      const validTargets = new Set(localGameState.valid_targets);
-
-      // Render Edges
-      const drawnPairs = new Set();
-      for (const [source, neighbors] of Object.entries(graph)) {
-        for (const target of neighbors) {
-          const pairKey = [source, target].sort().join("---");
-          if (!drawnPairs.has(pairKey)) {
-            drawnPairs.add(pairKey);
-            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-            line.setAttribute("x1", meta[source].coords.x);
-            line.setAttribute("y1", meta[source].coords.y);
-            line.setAttribute("x2", meta[target].coords.x);
-            line.setAttribute("y2", meta[target].coords.y);
-
-            const isContested = (controlled.has(source) && validTargets.has(target)) ||
-                                (controlled.has(target) && validTargets.has(source));
-            const isSecured = controlled.has(source) && controlled.has(target);
-
-            line.setAttribute("stroke", isSecured ? "#00f0ff" : isContested ? "#ffd000" : "#222c42");
-            line.setAttribute("stroke-width", isSecured ? "3" : isContested ? "2.5" : "1.5");
-            if (isContested) {
-              line.setAttribute("stroke-dasharray", "6,4");
-            }
-            svg.appendChild(line);
-          }
-        }
-      }
-
-      // Render Sector Nodes
-      for (const [id, data] of Object.entries(meta)) {
-        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        g.style.cursor = validTargets.has(id) ? "pointer" : "default";
-
-        if (validTargets.has(id)) {
-          g.addEventListener("click", () => initiateAttack(id));
-        }
-
-        const isCtrl = controlled.has(id);
-        const isTarget = validTargets.has(id);
-
-        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        circle.setAttribute("cx", data.coords.x);
-        circle.setAttribute("cy", data.coords.y);
-        circle.setAttribute("r", isCtrl ? "26" : isTarget ? "24" : "20");
-        circle.setAttribute("fill", isCtrl ? "#092e3d" : isTarget ? "#3b2f0a" : "#0d1426");
-        circle.setAttribute("stroke", isCtrl ? "#00f0ff" : isTarget ? "#ffd000" : "#3a445d");
-        circle.setAttribute("stroke-width", isTarget ? "3" : "2");
-
-        if (isTarget) {
-          const anim = document.createElementNS("http://www.w3.org/2000/svg", "animate");
-          anim.setAttribute("attributeName", "r");
-          anim.setAttribute("values", "23;27;23");
-          anim.setAttribute("dur", "1.6s");
-          anim.setAttribute("repeatCount", "indefinite");
-          circle.appendChild(anim);
-        }
-
-        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        text.setAttribute("x", data.coords.x);
-        text.setAttribute("y", data.coords.y + 40);
-        text.setAttribute("text-anchor", "middle");
-        text.setAttribute("fill", isCtrl ? "#00f0ff" : isTarget ? "#ffd000" : "#94a3b8");
-        text.setAttribute("font-size", "12");
-        text.setAttribute("font-weight", "600");
-        text.textContent = data.name.split(" - ")[0];
-
-        g.appendChild(circle);
-        g.appendChild(text);
-        svg.appendChild(g);
+        banner.classList.remove('open');
       }
     }
 
-    function renderSectorDeck() {
-      const deck = document.getElementById("sector-deck");
-      deck.innerHTML = "";
+    function renderMap() {
+      const svg = document.getElementById('starmap-svg');
+      if (!catalog || Object.keys(catalog).length === 0) return;
 
-      const meta = localGameState.sector_metadata;
-      const controlled = new Set(localGameState.controlled_sectors);
-      const validTargets = new Set(localGameState.valid_targets);
+      let linksHtml = '';
+      const renderedEdges = new Set();
 
-      for (const [id, data] of Object.entries(meta)) {
-        const isCtrl = controlled.has(id);
-        const isTarget = validTargets.has(id);
+      for (const [nodeA, neighbors] of Object.entries(topology)) {
+        for (const nodeB of neighbors) {
+          const edgeId = [nodeA, nodeB].sort().join('--');
+          if (renderedEdges.has(edgeId)) continue;
+          renderedEdges.add(edgeId);
 
-        const card = document.createElement("div");
-        card.className = `sector-card ${isCtrl ? "controlled" : isTarget ? "target" : "locked"}`;
+          const posA = catalog[nodeA];
+          const posB = catalog[nodeB];
+          if (!posA || !posB) continue;
 
-        let badgeClass = "badge-locked";
-        let badgeLabel = "Locked Sector";
-        if (isCtrl) {
-          badgeClass = "badge-controlled";
-          badgeLabel = "Liberated";
-        } else if (isTarget) {
-          badgeClass = "badge-target";
-          badgeLabel = "Adjacent Target";
+          const isNodeAControlled = currentGameState.controlled_sectors.includes(nodeA);
+          const isNodeBControlled = currentGameState.controlled_sectors.includes(nodeB);
+          const isDirectFrontier = (isNodeAControlled && !isNodeBControlled) || (!isNodeAControlled && isNodeBControlled);
+
+          const linkClass = isDirectFrontier ? 'map-link active-link' : 'map-link';
+          linksHtml += `<line x1="${posA.x}" y1="${posA.y}" x2="${posB.x}" y2="${posB.y}" class="${linkClass}" />`;
+        }
+      }
+
+      let nodesHtml = '';
+      for (const [id, meta] of Object.entries(catalog)) {
+        const isControlled = currentGameState.controlled_sectors.includes(id);
+        const isValidTarget = currentGameState.valid_targets.includes(id);
+
+        let strokeColor = '#44516d';
+        let fillColor = '#0f172a';
+        let pulseFilter = '';
+
+        if (isControlled) {
+          strokeColor = 'var(--cyan-glow)';
+          fillColor = 'rgba(0, 240, 255, 0.25)';
+          pulseFilter = 'filter="drop-shadow(0 0 8px var(--cyan-glow))"';
+        } else if (isValidTarget) {
+          strokeColor = 'var(--gold-glow)';
+          fillColor = 'rgba(255, 208, 0, 0.25)';
+          pulseFilter = 'filter="drop-shadow(0 0 10px var(--gold-glow))"';
         }
 
-        let buttonHtml = `<button class="action-btn btn-disabled" disabled>Unreachable</button>`;
-        if (isCtrl) {
-          buttonHtml = `<button class="action-btn btn-disabled" disabled>Sector Secured</button>`;
-        } else if (isTarget && localGameState.status === "IN_PROGRESS") {
-          buttonHtml = `<button class="action-btn btn-attack" onclick="initiateAttack('${id}')">Assault Sector</button>`;
-        }
-
-        card.innerHTML = `
-          <div>
-            <div class="card-top">
-              <span class="sector-title">${data.name}</span>
-              <span class="sector-badge ${badgeClass}">${badgeLabel}</span>
-            </div>
-            <div class="sector-theme">Grounding: ${data.theme}</div>
-            <div class="sector-desc">${data.description}</div>
-          </div>
-          <div>${buttonHtml}</div>
+        nodesHtml += `
+          <g class="node-group" onclick="handleSectorClick('${id}')" transform="translate(0, 0)">
+            <circle cx="${meta.x}" cy="${meta.y}" r="28" stroke="${strokeColor}" stroke-width="3" fill="${fillColor}" ${pulseFilter} />
+            <circle cx="${meta.x}" cy="${meta.y}" r="12" fill="${strokeColor}" />
+            <text x="${meta.x}" y="${meta.y - 38}" text-anchor="middle" fill="#fff" font-family="Orbitron" font-size="12" font-weight="700" letter-spacing="1">
+              ${meta.name.split('/')[0].trim()}
+            </text>
+            <text x="${meta.x}" y="${meta.y + 48}" text-anchor="middle" fill="${isControlled ? 'var(--cyan-glow)' : (isValidTarget ? 'var(--gold-glow)' : 'var(--text-muted)')}" font-family="Rajdhani" font-size="12" font-weight="600">
+              ${isControlled ? 'LIBERATED' : (isValidTarget ? 'ENGAGE TARGET' : 'LOCKED')}
+            </text>
+          </g>
         `;
-        deck.appendChild(card);
+      }
+
+      svg.innerHTML = linksHtml + nodesHtml;
+    }
+
+    function renderSectorSidebar() {
+      const container = document.getElementById('sector-list');
+      container.innerHTML = '';
+
+      for (const [id, meta] of Object.entries(catalog)) {
+        const isControlled = currentGameState.controlled_sectors.includes(id);
+        const isValid = currentGameState.valid_targets.includes(id);
+
+        const row = document.createElement('div');
+        row.className = `sector-item ${isControlled ? 'controlled' : (isValid ? 'valid-target' : '')}`;
+
+        let buttonHtml = '';
+        if (isControlled) {
+          buttonHtml = `<button class="sector-action-btn btn-liberated">SECURED</button>`;
+        } else if (isValid) {
+          buttonHtml = `<button class="sector-action-btn btn-engage" onclick="triggerAttack('${id}')">ASSAULT</button>`;
+        } else {
+          buttonHtml = `<button class="sector-action-btn btn-locked" disabled>LOCKED</button>`;
+        }
+
+        row.innerHTML = `
+          <div>
+            <div class="sector-name-badge">${meta.name}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">${meta.lore.substring(0, 42)}...</div>
+          </div>
+          ${buttonHtml}
+        `;
+        container.appendChild(row);
       }
     }
 
-    async function initiateAttack(sectorId) {
-      if (!localGameState.valid_targets.includes(sectorId)) return;
-      currentTargetSector = sectorId;
+    function handleSectorClick(sectorId) {
+      if (currentGameState.valid_targets.includes(sectorId)) {
+        triggerAttack(sectorId);
+      } else if (currentGameState.controlled_sectors.includes(sectorId)) {
+        document.getElementById('event-feed').textContent = `Sector ${catalog[sectorId].name} is fully operational under Sol Fleet liberation command.`;
+      } else {
+        document.getElementById('event-feed').textContent = `Cannot assault ${catalog[sectorId].name}. Target is outside the adjacency boundary!`;
+      }
+    }
 
+    async function triggerAttack(sectorId) {
       try {
-        const res = await fetch("/api/game/attack", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        const res = await fetch('/api/game/attack', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ target_sector: sectorId })
         });
-
+        const data = await res.json();
         if (!res.ok) {
-          const err = await res.json();
-          alert(err.detail || "Attack initiation failed.");
+          alert(data.detail || "Attack initiation failed.");
           return;
         }
 
-        const challenge = await res.json();
-        openModal(challenge);
+        currentTargetSector = data.sector_id;
+        openCombatModal(data);
       } catch (err) {
-        console.error("Combat assault failed:", err);
+        console.error("Combat assault error:", err);
       }
     }
 
-    function openModal(challenge) {
-      const meta = localGameState.sector_metadata[currentTargetSector];
-      document.getElementById("combat-sector-name").innerText = `Assault on ${meta.name}`;
-      document.getElementById("combat-movie-title").innerText = challenge.movie_title;
-      document.getElementById("combat-question").innerText = challenge.question;
+    function openCombatModal(data) {
+      document.getElementById('combat-sector-tag').textContent = `TACTICAL VECTOR: ${data.sector_name.toUpperCase()}`;
+      document.getElementById('combat-movie-tag').textContent = data.movie_title;
+      document.getElementById('combat-question').textContent = data.question;
 
-      const optsContainer = document.getElementById("combat-options");
-      optsContainer.innerHTML = "";
+      const optsContainer = document.getElementById('combat-options');
+      optsContainer.innerHTML = '';
 
-      const feedback = document.getElementById("combat-feedback");
-      feedback.className = "combat-feedback";
-      feedback.innerText = "";
-
-      document.getElementById("btn-modal-dismiss").style.display = "none";
-
-      challenge.options.forEach((optText, idx) => {
-        const btn = document.createElement("button");
-        btn.className = "option-btn";
-        btn.innerHTML = `<strong>${String.fromCharCode(65 + idx)}.</strong> ${optText}`;
-        btn.onclick = () => submitAnswer(idx, btn);
+      const letters = ['A', 'B', 'C', 'D'];
+      data.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerHTML = `<span class="opt-letter">${letters[idx]}</span> <span>${opt}</span>`;
+        btn.onclick = () => submitCombatAnswer(idx);
         optsContainer.appendChild(btn);
       });
 
-      document.getElementById("combat-modal").classList.add("open");
+      document.getElementById('combat-modal').classList.add('open');
     }
 
-    async function submitAnswer(chosenIndex, selectedButton) {
-      // Disable all option buttons immediately
-      const allButtons = document.querySelectorAll(".option-btn");
-      allButtons.forEach(b => b.disabled = true);
-
+    async function submitCombatAnswer(chosenIndex) {
       try {
-        const res = await fetch("/api/game/answer", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        const res = await fetch('/api/game/answer', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
             target_sector: currentTargetSector,
             chosen_index: chosenIndex
           })
         });
-
         const data = await res.json();
-        const feedback = document.getElementById("combat-feedback");
-
-        allButtons[data.correct_index].classList.add("selected-correct");
-        if (!data.correct) {
-          selectedButton.classList.add("selected-wrong");
-          feedback.className = "combat-feedback failure show";
-          feedback.innerHTML = `<strong>Cyber-Defense Repudiation:</strong> ${data.explanation}`;
-        } else {
-          feedback.className = "combat-feedback success show";
-          feedback.innerHTML = `<strong>Invasion Successful:</strong> ${data.explanation}`;
-        }
-
-        localGameState = data.game_state;
-        renderAll();
-        document.getElementById("btn-modal-dismiss").style.display = "inline-block";
+        document.getElementById('combat-modal').classList.remove('open');
+        currentGameState = data.game_state;
+        updateHUD();
       } catch (err) {
-        console.error("Error submitting answer:", err);
+        console.error("Answer submission failure:", err);
       }
     }
 
-    function closeModal() {
-      document.getElementById("combat-modal").classList.remove("open");
-      currentTargetSector = null;
-    }
-
-    async function resetGame() {
-      if (!confirm("Re-initialize the Sol Fleet expedition back to Earth Capital?")) return;
+    async function resetCampaign() {
       try {
-        const res = await fetch("/api/game/reset", { method: "POST" });
+        const res = await fetch('/api/game/reset', { method: 'POST' });
         const data = await res.json();
-        localGameState = data.game_state;
-        closeModal();
-        renderAll();
+        currentGameState = data.game_state;
+        updateHUD();
       } catch (err) {
-        console.error("Reset failed:", err);
+        console.error("Reset campaign failed:", err);
       }
     }
 
-    // Initialize state on launch
-    fetchGameState();
+    window.onload = loadInitialData;
   </script>
 </body>
 </html>

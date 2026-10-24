@@ -47,28 +47,40 @@ A representative head-to-head comparison run reveals a stark contrast across lat
 
 | Metric | Unharnessed Track (Vibe Coding) | Harnessed Track (Loop Engineering) | Operational Advantage |
 |:---|:---|:---|:---|
-| **Execution Duration** | **1m 31s – 2m 16s** (typically 1.5–2+ mins) | **0m 30s – 0m 35s** (2 iterations) | **3–4x faster** |
-| **Combined Tokens** | **26,106 – 45,571 tokens** (`11,079 in / 15,027 out`) | **~6,620 tokens** (`5,604 in / 1,016 out`) | **~75–85% fewer tokens** |
-| **Estimated Cost** | **$0.0107 – $0.0168** | **~$0.0015** | **~85% cheaper (~7x lower cost)** |
+| **Execution Duration** | **1m 24s – 2m 16s** (typically ~1.5 mins) | **0m 23s – 0m 35s** (2 iterations) | **3–4x faster** |
+| **Combined Tokens** | **17,670 – 45,571 tokens** (`1,293–12,765 in / 15,753–16,967 out`) | **~6,600 – 6,900 tokens** (`5,779 in / 1,067 out`) | **~65–85% fewer tokens** |
+| **Estimated Cost** | **$0.0099 – $0.0168** | **~$0.0015** | **~85% cheaper** |
 | **Rubric Score** | **6.0 – 11.0 / 14.0** (Always fails) | **14.0 / 14.0** (Always passes) | **100% gate pass** |
 | **Functional Outcome** | ❌ Broken / Non-functional | ✅ Fully playable & verified | **Only harnessed code works** |
 
 ### Why the Harnessed Track Outperforms Vibe Coding
 
-1. **Structured Discipline Beats Monolithic Hallucination**:
-   - In the **Unharnessed track**, the model is given a broad, open-loop prompt without architectural guardrails or intermediate feedback tools, causing it to stream 15,000+ output tokens in a single unverified burst.
-   - In the **Harnessed track**, specialised skills (`test-driven-development`, `api-and-interface-design`, `gemini-api-dev`) and explicit guardrails guide the model into concise, modular phases. It writes unit tests first and implements only what is required.
+1. **Structured Discipline Beats Monolithic Hallucination (`12 / 14` on Turn 1)**:
+   - Both tracks run with the full 64K output token ceiling (`MAX_OUTPUT_TOKENS = 65536`) on `gemini-3.8-flash` — there is no artificial output token cap.
+   - In the **Unharnessed track**, the model receives a broad, open-loop prompt without architectural guardrails or intermediate feedback tools, causing it to stream 15,000–17,000 output tokens of unverified boilerplate in a single pass (`7.0–11.0 / 14.0`).
+   - In the **Harnessed track**, [`harness/harness_context.md`](harness/harness_context.md) and activated skills (`test-driven-development`, `api-and-interface-design`, `gemini-api-dev`) guide Turn 1 to produce a concise **Architectural & TDD Verification Plan** (`~800` output tokens) while `materialise_builder_output_callback` materialises the modular workspace files — immediately achieving **12.0 / 14.0** on Iteration 1.
 
-2. **Autonomous Self-Healing via Distilled Living Memory Receipts**:
+2. **Autonomous Self-Healing via Distilled Living Memory Receipts (`12 / 14` $\rightarrow$ `14 / 14` on Turn 2)**:
    - The unharnessed agent has no second chance. In reality, a human would need to step in to diagnose and fix all the broken contracts.
-   - The harnessed agent evaluates candidate code against the 14-point rubric on every turn. A structured **Iteration Evidence Receipt** (Score Delta, `pytest`/`ruff` Verification Receipt, Active Failures, and Next-Turn Remediation Targets) is persisted to [`harness/output/LIVING_MEMORY.md`](harness/output/LIVING_MEMORY.md) and reinjected into the next turn to achieve a verified **14 / 14 (100%)** score.
+   - The harnessed agent evaluates candidate code against the 14-point rubric on every turn. A structured **Iteration Evidence Receipt** (Score Delta, `pytest`/`ruff` Verification Receipt, Active Failures, and Next-Turn Remediation Targets) is persisted to [`harness/output/LIVING_MEMORY.md`](harness/output/LIVING_MEMORY.md) and paired with an explicit remediation prompt from `RubricEvaluationGateAgent`, allowing Turn 2 to emit a focused **Self-Healing Remediation Summary** (`~240` output tokens) and achieve a verified **14.0 / 14.0 (100%)** score.
 
-3. **Dramatically Lower Operational Cost (~6.6K Tokens) via Context Pruning & `ThinkingLevel.LOW`**:
-   - By configuring `include_contents="none"` on `harnessed_builder_agent` and `ThinkingLevel.LOW` on `gemini-3.8-flash`, Iteration 2 prunes the raw Iteration 1 conversation history and receives only the standing guardrails plus the distilled `LIVING_MEMORY.md` receipt — keeping the entire 2-iteration self-healing run to **~6,600 tokens (~$0.0015)** compared to **26,000+ tokens (~$0.0107+)** for the unharnessed single pass.
+3. **Dramatically Lower Operational Cost (~6.8K Tokens in ~23–35s) via Context Pruning, Output Discipline & `ThinkingLevel.LOW`**:
+   - By configuring `include_contents="none"` on `harnessed_builder_agent`, `ThinkingLevel.LOW` on `gemini-3.8-flash`, and explicit per-turn **output discipline** in [`harness/harness_context.md`](harness/harness_context.md), Iteration 2 prunes the raw Iteration 1 conversation history and receives only the standing guardrails plus the distilled `LIVING_MEMORY.md` receipt — keeping the entire 2-iteration self-healing run to **~6,600–6,900 tokens (~$0.0015)** in **23–35 seconds**, compared to **17,600–30,000+ tokens ($0.0100–$0.0121+)** and **1m 24s–1m 41s+** for the unharnessed single pass.
 
 4. **Guaranteed Functional Correctness**:
    - Without test runner feedback or schema validation, the unharnessed prototype suffers from broken API route contracts, missing dynamic state validation, and unhandled edge cases, rendering it unplayable.
    - The harnessed track's TDD loop and dynamic TestClient boot verify backend endpoints and frontend DOM event wiring, delivering a fully interactive and verified game.
+
+### Hints & Tips for Authoring `harness_context.md` (Controlling *What* and *How* to Output)
+
+One of the biggest practical lessons from benchmarking this workbench is that **output tokens dominate both wall-clock latency and API cost** (output tokens stream at ~100–150 tokens/sec and cost $4\times$ more than input tokens on Gemini Flash). When we initially removed artificial `max_output_tokens` caps without constraining conversational output in [`harness/harness_context.md`](harness/harness_context.md), the harnessed builder echoed entire multi-file implementations inline in chat on every turn — ballooning to **25,000–32,000 tokens (`1:56–2:19`, `$0.0128–$0.0167`)**.
+
+Applying a single, turn-agnostic **Output Discipline** protocol in [`harness/harness_context.md`](harness/harness_context.md) cut Track 2's output tokens by **~18x** (from `~20,000` output tokens down to `~1,067` output tokens) and reduced total runtime to **23 seconds (`$0.0015`)**:
+
+1. **Separate Workspace Artefacts from Conversational Synthesis (No Inline File Dumps)**: Code files belong in the workspace (written via tools or deterministic callbacks), *not* dumped verbatim into the conversational stream. Explicitly instruct the agent to omit full multi-file code dumps from chat responses.
+2. **Require a Single Bounded Engineering Turn Summary (150–250 Words) on Every Pass**: Rather than hardcoding different rules for different turn numbers, give the agent one universal output rule for every pass: emit a concise **Engineering Turn Summary** (150–250 words) stating the active scope (either the initial specification when `LIVING_MEMORY.md` is empty, or the failed checks recorded in `LIVING_MEMORY.md`), the architectural or root-cause rationale, and the targeted changes and unit tests applied.
+3. **Remediate Only the Failing Delta**: When `LIVING_MEMORY.md` contains failure diagnostics from the evaluation gate, instruct the agent to fix only the failing checks rather than re-planning or regenerating components that already passed.
+4. **Align Prompt Instructions with Tool & Skill Execution Mode**: Ensure `harness_context.md` matches your runtime mode — for example, if skills are pre-injected under `# ACTIVATED ENGINEERING SKILLS`, instruct the agent to apply them directly rather than wasting a turn re-calling `activate_skill`; and if running in callback materialisation mode (`FunctionCallingConfigMode.NONE`), instruct the agent to respond directly in Markdown rather than telling it to invoke disabled file tools.
 
 ## The Meta Architecture: The Harness (Layer 1) vs. The Generated Workload (Layer 2)
 

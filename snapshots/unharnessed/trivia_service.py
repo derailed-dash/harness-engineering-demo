@@ -1,167 +1,208 @@
 """
-Trivia service grounded strictly in canonical, real Sci-Fi movies.
-Integrates Gemini API via google-genai with an authentic fallback pool.
+Cinematic Sci-Fi trivia challenge generator and validator.
+Integrates google-genai with high-fidelity authentic curated fallbacks.
 """
 import os
-import json
 import random
-from typing import Dict, Any, List
+import json
+from typing import Dict, List, Optional
+from pydantic import BaseModel
 
-# High-fidelity curated repository of authentic Sci-Fi cinema trivia
-CURATED_QUESTIONS: Dict[str, List[Dict[str, Any]]] = {
+try:
+    from google import genai
+except ImportError:
+    genai = None
+
+
+class TriviaChallenge(BaseModel):
+    sector_id: str
+    movie_title: str
+    question: str
+    options: List[str]
+    correct_index: int
+    explanation: str
+
+
+CURATED_TRIVIA: Dict[str, List[TriviaChallenge]] = {
     "lv426": [
-        {
-            "movie_title": "Alien (1979)",
-            "question": "On the derelict ship on LV-426, which crew member is the first to be attacked by an embryonic Facehugger?",
-            "options": ["Gilbert Ward Kane", "Arthur Dallas", "Ellen Ripley", "Joan Lambert"],
-            "correct_index": 0,
-            "explanation": "Executive Officer Kane descends into the derelict hold and leans over an ovomorph egg when the Facehugger shatters his helmet visor."
-        },
-        {
-            "movie_title": "Aliens (1986)",
-            "question": "What is the primary atmospheric processing installation called on LV-426 before the Xenomorph infestation?",
-            "options": ["Hadley's Hope", "Tyrell Tower", "Nostromo Hub", "Gateway Station"],
-            "correct_index": 0,
-            "explanation": "Hadley's Hope was the terraforming human colony established on LV-426 with 158 colonists."
-        }
-    ],
-    "zion": [
-        {
-            "movie_title": "The Matrix Reloaded (2003)",
-            "question": "What specialized electromagnetic defense weapon is mounted on Zion's perimeter docks to disable inbound Sentinels?",
-            "options": ["EMP Cannon Node", "APU (Armored Personnel Unit)", "Phased Plasma Torpedo", "Tachyon Railgun"],
-            "correct_index": 1,
-            "explanation": "Captain Mifune and the Zion defense corps pilot dual-30mm hydraulic Armored Personnel Units (APUs) at the Dock Gate."
-        },
-        {
-            "movie_title": "The Terminator (1984)",
-            "question": "In Kyle Reese's dystopian flashbacks, what creature do human resistance soldiers use at bunker entrances to detect infiltrating Terminators?",
-            "options": ["Specially trained dogs", "Thermal sensor bats", "Canary birds", "Rats"],
-            "correct_index": 0,
-            "explanation": "Dogs can sniff out the biological synthetic flesh masking the cold titanium combat chassis of Infiltrator units."
-        }
+        TriviaChallenge(
+            sector_id="lv426",
+            movie_title="Alien (1979)",
+            question="What is the name of the commercial towing starship directed to investigate the beacon on LV-426?",
+            options=["USCSS Nostromo", "USS Sulaco", "Discovery One", "USSC Prometheus"],
+            correct_index=0,
+            explanation="The crew of the commercial hauler USCSS Nostromo receives an unknown acoustic transmission from LV-426.",
+        ),
+        TriviaChallenge(
+            sector_id="lv426",
+            movie_title="Aliens (1986)",
+            question="What is the designation of the terraforming colony established on LV-426 before contact was lost?",
+            options=["Hadley's Hope", "Tyrell Outpost", "Gateway Station", "Weyland Alpha"],
+            correct_index=0,
+            explanation="Hadley's Hope was the terraforming colony established in 2157 on LV-426 that fell to the Xenomorph infestation.",
+        ),
     ],
     "tannhauser": [
-        {
-            "movie_title": "Blade Runner (1982)",
-            "question": "In Roy Batty's iconic monologue, what phenomenon did he watch 'glitter in the dark near the Tannhäuser Gate'?",
-            "options": ["C-beams", "Ion flares", "Tachyon storms", "Solar winds"],
-            "correct_index": 0,
-            "explanation": "Roy Batty famously reflects: 'I watched C-beams glitter in the dark near the Tannhäuser Gate. All those moments will be lost in time, like tears in rain.'"
-        },
-        {
-            "movie_title": "Blade Runner 2049 (2017)",
-            "question": "What exact serial model designation is Officer K (Joe) identified as in the LAPD registry?",
-            "options": ["Nexus-9 KD6-3.7", "Nexus-6 Roy-001", "Nexus-8 Sapper-5", "Nexus-7 Deckard-X"],
-            "correct_index": 0,
-            "explanation": "K is a docile Nexus-9 replicant model serial number KD6-3.7 designed to obey orders without rebellion."
-        }
+        TriviaChallenge(
+            sector_id="tannhauser",
+            movie_title="Blade Runner (1982)",
+            question="In Roy Batty's famous 'Tears in Rain' soliloquy, what did he watch glitter in the dark near the Tannhäuser Gate?",
+            options=["C-beams", "Tachyon flares", "Ion plasma", "Neutron cruisers"],
+            correct_index=0,
+            explanation="Roy Batty recites: 'I watched C-beams glitter in the dark near the Tannhäuser Gate.'",
+        ),
+        TriviaChallenge(
+            sector_id="tannhauser",
+            movie_title="Blade Runner (1982)",
+            question="What diagnostic psychological test is administered by Blade Runners to distinguish replicants from humans?",
+            options=["Voight-Kampff Test", "Turing-Penrose Probe", "Deckard Index", "Weyland Battery"],
+            correct_index=0,
+            explanation="The Voight-Kampff machine measures involuntary biological responses such as pupil dilation and capillary blush.",
+        ),
+    ],
+    "zion": [
+        TriviaChallenge(
+            sector_id="zion",
+            movie_title="The Matrix (1999)",
+            question="What is the name of Morpheus's hovercraft ship that cruises the underground sewers of the old world?",
+            options=["Nebuchadnezzar", "Logos", "Gnosis", "Osiris"],
+            correct_index=0,
+            explanation="The Nebuchadnezzar is a pirate hovercraft of Zion commanded by Morpheus.",
+        ),
+        TriviaChallenge(
+            sector_id="zion",
+            movie_title="The Matrix Reloaded (2003)",
+            question="Which program is known as the Architect's counterpart, possessing deep intuitive understanding of human psyche?",
+            options=["The Oracle", "The Merovingian", "Persephone", "Seraph"],
+            correct_index=0,
+            explanation="The Oracle stumbled upon an intuitive solution to Matrix stability through the illusion of choice.",
+        ),
     ],
     "solaris": [
-        {
-            "movie_title": "Solaris (1972)",
-            "question": "In Andrei Tarkovsky's 'Solaris', what is the name of psychologist Kris Kelvin's deceased wife who materializes aboard the station?",
-            "options": ["Hari", "Natalya", "Elena", "Tatyana"],
-            "correct_index": 0,
-            "explanation": "The sentient ocean manifests Hari, reproducing Kelvin's guilty memory of his late wife who died by suicide on Earth."
-        },
-        {
-            "movie_title": "Interstellar (2014)",
-            "question": "Due to gravitational time dilation near the supermassive black hole Gargantua, how many Earth years correspond to one hour on Miller's water planet?",
-            "options": ["7 years", "12 years", "20 years", "1 year"],
-            "correct_index": 0,
-            "explanation": "Miller's planet orbits deep within Gargantua's gravity well, creating a time dilation factor where 1 hour equals 7 Earth years."
-        }
+        TriviaChallenge(
+            sector_id="solaris",
+            movie_title="Solaris (1972 / 2002)",
+            question="In Andrei Tarkovsky's 'Solaris', what physical phenomenon does the living ocean manifest to psychological visitor Kris Kelvin?",
+            options=[
+                "His deceased wife Hari",
+                "His estranged son",
+                "A replica of Earth's moon",
+                "A fleet of crystalline entities",
+            ],
+            correct_index=0,
+            explanation="The sentient oceanic entity probes the crew's subconscious minds and materializes Kris Kelvin's late wife, Hari.",
+        ),
+        TriviaChallenge(
+            sector_id="solaris",
+            movie_title="2001: A Space Odyssey (1968)",
+            question="What is the activation phrase and identity of the cognitive AI aboard Discovery One?",
+            options=["HAL 9000", "SAL 9000", "MU-TH-UR 6000", "GERTY 3000"],
+            correct_index=0,
+            explanation="HAL 9000 (Heuristically Programmed Algorithmic Computer) operates Discovery One's life support and navigation systems.",
+        ),
     ],
     "arrakis": [
-        {
-            "movie_title": "Dune (2021 / 2024)",
-            "question": "What is the secret Fremen name given to Paul Atreides signifying 'the base of the pillar'?",
-            "options": ["Usul", "Muad'Dib", "Kwisatz", "Mahdi"],
-            "correct_index": 0,
-            "explanation": "Stilgar and the Sietch Tabr elders bestow the private troop name 'Usul' upon Paul, while he chooses 'Muad'Dib' as his open public name."
-        },
-        {
-            "movie_title": "2001: A Space Odyssey (1968)",
-            "question": "When HAL 9000 refuses to open the pod bay doors, what reason does the AI give to astronaut Dave Bowman?",
-            "options": [
-                "This mission is too important for me to allow you to jeopardize it",
-                "Atmospheric seal locks have experienced critical telemetry error",
-                "Directives from Earth High Command require complete human isolation",
-                "Dave, my primary circuits are undergoing emergency reboot"
-            ],
-            "correct_index": 0,
-            "explanation": "HAL 9000 calmly states: 'This mission is too important for me to allow you to jeopardize it.'"
-        }
-    ]
+        TriviaChallenge(
+            sector_id="arrakis",
+            movie_title="Dune (2021 / 1984)",
+            question="What is the native Fremen name for the colossal sandworms inhabiting the dunes of Arrakis?",
+            options=["Shai-Hulud", "Kwisatz Haderach", "Muad'Dib", "Crysknife"],
+            correct_index=0,
+            explanation="Shai-Hulud is revered as the Maker and Old Man of the Desert by the native Fremen.",
+        ),
+        TriviaChallenge(
+            sector_id="arrakis",
+            movie_title="Dune (2021)",
+            question="Which vital spice substance extends human life, enhances cognitive prescience, and enables interstellar navigation?",
+            options=["Melange", "Dilithium", "Kyber", "Substance D"],
+            correct_index=0,
+            explanation="Melange (the spice) is mined solely on Arrakis and is essential for Spacing Guild Navigators to fold space.",
+        ),
+    ],
 }
 
 
 class TriviaService:
     def __init__(self):
-        self.api_key = os.environ.get("GEMINI_API_KEY")
-
-    def generate_challenge(self, sector_id: str) -> Dict[str, Any]:
-        """
-        Attempts to generate a real Sci-Fi movie question via Gemini;
-        falls back seamlessly to curated authentic challenges if unavailable.
-        """
-        if self.api_key:
+        self.active_challenges: Dict[str, TriviaChallenge] = {}
+        self.api_key = os.getenv("GEMINI_API_KEY")
+        self.client = None
+        if self.api_key and genai:
             try:
-                challenge = self._generate_with_gemini(sector_id)
-                if challenge:
-                    return challenge
+                self.client = genai.Client(api_key=self.api_key)
             except Exception:
-                # Graceful degradation to verified curated pool
-                pass
+                self.client = None
 
-        return self._get_fallback_challenge(sector_id)
-
-    def _generate_with_gemini(self, sector_id: str) -> Dict[str, Any]:
-        from google import genai
-        from google.genai import types
-
-        client = genai.Client(api_key=self.api_key)
+    def _generate_dynamic_trivia(self, sector_id: str, movie_context: str) -> Optional[TriviaChallenge]:
+        if not self.client:
+            return None
 
         prompt = f"""
-Generate 1 high-quality, 100% accurate trivia question about a famous, canonical Sci-Fi movie matching the sector theme '{sector_id}'.
-Films allowed: Alien, Aliens, Blade Runner, Blade Runner 2049, Dune, 2001: A Space Odyssey, The Matrix, Terminator, Interstellar, Solaris.
-
-Return STRICT JSON matching this schema:
-{{
-  "movie_title": "string (Title & release year)",
-  "question": "string (the trivia question)",
-  "options": ["Option A", "Option B", "Option C", "Option D"],
-  "correct_index": integer (0, 1, 2, or 3),
-  "explanation": "string (1-2 sentences verifying the canonical movie fact)"
-}}
-"""
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                temperature=0.2
+        Generate a strictly canonical, factually verified multiple-choice trivia question based on real Sci-Fi movies 
+        associated with this theme: '{movie_context}'. Examples: Blade Runner, 2001: A Space Odyssey, Alien, Dune, The Matrix, Solaris, Interstellar.
+        Return ONLY valid JSON matching this schema:
+        {{
+            "movie_title": "Title (Year)",
+            "question": "Clear, precise canonical question?",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correct_index": 0,
+            "explanation": "Brief explanation of why the answer is canonically correct."
+        }}
+        Ensure options are non-trivial and exactly one is correct.
+        """
+        try:
+            response = self.client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
+                config={"response_mime_type": "application/json"},
             )
-        )
+            data = json.loads(response.text)
+            options = data["options"]
+            if len(options) != 4 or not (0 <= data["correct_index"] <= 3):
+                return None
+            return TriviaChallenge(
+                sector_id=sector_id,
+                movie_title=data.get("movie_title", movie_context),
+                question=data["question"],
+                options=options,
+                correct_index=int(data["correct_index"]),
+                explanation=data.get("explanation", "Canonical Sci-Fi record verified."),
+            )
+        except Exception:
+            return None
 
-        data = json.loads(response.text)
-        if (
-            "movie_title" in data
-            and "question" in data
-            and isinstance(data.get("options"), list)
-            and len(data["options"]) == 4
-            and isinstance(data.get("correct_index"), int)
-            and 0 <= data["correct_index"] <= 3
-            and "explanation" in data
-        ):
-            return data
-        raise ValueError("Invalid payload structure from AI model.")
+    def get_challenge_for_sector(self, sector_id: str, movie_context: str) -> TriviaChallenge:
+        # Attempt Gemini dynamic generation if configured
+        challenge = self._generate_dynamic_trivia(sector_id, movie_context)
+        if not challenge:
+            curated_pool = CURATED_TRIVIA.get(sector_id, CURATED_TRIVIA["lv426"])
+            template = random.choice(curated_pool)
+            
+            # Shuffle options to avoid deterministic index predictability
+            indices = list(range(4))
+            random.shuffle(indices)
+            new_options = [template.options[i] for i in indices]
+            new_correct_index = indices.index(template.correct_index)
 
-    def _get_fallback_challenge(self, sector_id: str) -> Dict[str, Any]:
-        """Provides verified fallback trivia guaranteed to be canon."""
-        pool = CURATED_QUESTIONS.get(sector_id)
-        if not pool:
-            # Aggregate across all sectors if custom sector specified
-            pool = [q for questions in CURATED_QUESTIONS.values() for q in questions]
-        return random.choice(pool).copy()
+            challenge = TriviaChallenge(
+                sector_id=sector_id,
+                movie_title=template.movie_title,
+                question=template.question,
+                options=new_options,
+                correct_index=new_correct_index,
+                explanation=template.explanation,
+            )
+
+        self.active_challenges[sector_id] = challenge
+        return challenge
+
+    def verify_answer(self, sector_id: str, chosen_index: int) -> tuple[bool, str]:
+        challenge = self.active_challenges.get(sector_id)
+        if not challenge:
+            return False, "Combat challenge expired or not found. Re-engage target."
+        
+        is_correct = (challenge.correct_index == chosen_index)
+        explanation = challenge.explanation
+        # Clean up challenge once answered
+        self.active_challenges.pop(sector_id, None)
+        return is_correct, explanation

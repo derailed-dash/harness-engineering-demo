@@ -1,145 +1,163 @@
 """
-Game Engine for Cosmic Trivia & Strategy Conquest.
-Manages galaxy topology, state machine transitions, and turn evaluations.
+Core domain logic, star map topology graph, and state machine transitions.
 """
-from typing import Dict, List, Set, Any, Optional
+from typing import Dict, List, Set, Optional
+from pydantic import BaseModel, Field
 
-SECTOR_METADATA: Dict[str, Dict[str, Any]] = {
-    "earth": {
-        "name": "Earth - Sol Capital",
-        "theme": "The Matrix & 2001: A Space Odyssey",
-        "description": "Humanity's cradle and high-command staging ground.",
-        "coords": {"x": 150, "y": 300}
-    },
-    "lv426": {
-        "name": "Acheron LV-426",
-        "theme": "Alien & Aliens",
-        "description": "Desolate storm-swept moon hosting bio-mechanical terrors.",
-        "coords": {"x": 380, "y": 140}
-    },
-    "zion": {
-        "name": "Zion Sub-Level",
-        "theme": "The Matrix & Terminator",
-        "description": "Subterranean bastion besieged by sentinel swarm constructs.",
-        "coords": {"x": 380, "y": 460}
-    },
-    "tannhauser": {
-        "name": "Tannhäuser Gate",
-        "theme": "Blade Runner",
-        "description": "Outer-rim warp relay glowing with c-beams in the dark.",
-        "coords": {"x": 620, "y": 140}
-    },
-    "solaris": {
-        "name": "Solaris Ocean Orbit",
-        "theme": "Solaris & Interstellar",
-        "description": "Living plasma ocean inducing psycho-physical apparitions.",
-        "coords": {"x": 620, "y": 300}
-    },
-    "arrakis": {
-        "name": "Arrakis Deep Desert",
-        "theme": "Dune",
-        "description": "Harsh spice citadel and AI Gatekeeper command core.",
-        "coords": {"x": 850, "y": 300}
-    }
+
+class SectorMetadata(BaseModel):
+    id: str
+    name: str
+    lore: str
+    theme_movie: str
+    x: int
+    y: int
+
+
+SECTOR_CATALOG: Dict[str, SectorMetadata] = {
+    "earth": SectorMetadata(
+        id="earth",
+        name="Terra / Sol Fleet HQ",
+        lore="The cradle of humanity and command center for galactic liberation.",
+        theme_movie="2001: A Space Odyssey / The Matrix",
+        x=150,
+        y=350,
+    ),
+    "lv426": SectorMetadata(
+        id="lv426",
+        name="LV-426 Acheron",
+        lore="Desolate rock harboring derelict biomechanical vessels and xenomorphic hives.",
+        theme_movie="Alien / Aliens",
+        x=380,
+        y=180,
+    ),
+    "zion": SectorMetadata(
+        id="zion",
+        name="Zion Core Sector",
+        lore="Deep geothermal redoubt resisting absolute synthetic machine dominance.",
+        theme_movie="The Matrix",
+        x=340,
+        y=520,
+    ),
+    "tannhauser": SectorMetadata(
+        id="tannhauser",
+        name="Tannhäuser Gate",
+        lore="Glittering orbital relay rim burning with C-beams in the dark near the shoulder of Orion.",
+        theme_movie="Blade Runner",
+        x=640,
+        y=140,
+    ),
+    "solaris": SectorMetadata(
+        id="solaris",
+        name="Solaris Living Ocean",
+        lore="Enigmatic sentient oceanic world generating vivid physical manifestations.",
+        theme_movie="Solaris",
+        x=620,
+        y=370,
+    ),
+    "arrakis": SectorMetadata(
+        id="arrakis",
+        name="Arrakis Dune Citadel",
+        lore="Barren desert expanse guarded by titanic sandworms and essential spice flows.",
+        theme_movie="Dune",
+        x=880,
+        y=340,
+    ),
 }
 
-# Star Map Topology: Undirected Graph Adjacency List
-GALAXY_GRAPH: Dict[str, List[str]] = {
-    "earth": ["lv426", "zion"],
-    "lv426": ["earth", "tannhauser", "solaris"],
-    "zion": ["earth", "arrakis"],
-    "tannhauser": ["lv426", "arrakis"],
-    "solaris": ["lv426", "arrakis"],
-    "arrakis": ["tannhauser", "solaris", "zion"]
+# Undirected Adjacency Graph
+TOPOLOGY: Dict[str, Set[str]] = {
+    "earth": {"lv426", "zion"},
+    "lv426": {"earth", "tannhauser", "solaris"},
+    "zion": {"earth", "arrakis"},
+    "tannhauser": {"lv426", "arrakis"},
+    "solaris": {"lv426", "arrakis"},
+    "arrakis": {"tannhauser", "solaris", "zion"},
 }
 
-TOTAL_SECTORS: int = len(SECTOR_METADATA)
+
+class GameState(BaseModel):
+    controlled_sectors: List[str] = Field(default_factory=lambda: ["earth"])
+    shields: int = 100
+    energy: int = 50
+    turn_count: int = 0
+    status: str = "IN_PROGRESS"  # "IN_PROGRESS", "VICTORY", "DEFEAT"
+    valid_targets: List[str] = Field(default_factory=list)
+    pending_target: Optional[str] = None
+    last_event: str = "Fleet command active. Choose an adjacent sector to assault."
 
 
-class GameState:
+class ConquestGame:
     def __init__(self):
-        self.controlled_sectors: List[str] = ["earth"]
-        self.shields: int = 100
-        self.energy: int = 50
-        self.turn_count: int = 0
-        self.status: str = "IN_PROGRESS"  # "IN_PROGRESS", "VICTORY", "DEFEAT"
-        self.active_challenge: Optional[Dict[str, Any]] = None
+        self.state = GameState()
+        self.refresh_valid_targets()
 
-    def get_valid_targets(self) -> List[str]:
-        """Returns unconquered sectors directly adjacent to player-held territory."""
-        if self.status != "IN_PROGRESS":
-            return []
+    def refresh_valid_targets(self) -> None:
+        if self.state.status != "IN_PROGRESS":
+            self.state.valid_targets = []
+            return
 
-        controlled_set = set(self.controlled_sectors)
-        candidates: Set[str] = set()
+        targets: Set[str] = set()
+        controlled_set = set(self.state.controlled_sectors)
 
-        for sector in self.controlled_sectors:
-            for neighbor in GALAXY_GRAPH.get(sector, []):
+        for sector in controlled_set:
+            neighbors = TOPOLOGY.get(sector, set())
+            for neighbor in neighbors:
                 if neighbor not in controlled_set:
-                    candidates.add(neighbor)
+                    targets.add(neighbor)
 
-        return sorted(list(candidates))
+        self.state.valid_targets = sorted(list(targets))
 
-    def can_attack(self, target_sector: str) -> tuple[bool, str]:
-        """Validates if target sector is eligible for invasion."""
-        if self.status != "IN_PROGRESS":
-            return False, f"Campaign has concluded with status: {self.status}."
+    def reset(self) -> GameState:
+        self.state = GameState()
+        self.refresh_valid_targets()
+        return self.state
 
-        if target_sector not in SECTOR_METADATA:
-            return False, f"Unknown sector identifier: '{target_sector}'."
+    def is_adjacent(self, target_sector: str) -> bool:
+        return target_sector in self.state.valid_targets
 
-        if target_sector in self.controlled_sectors:
-            return False, f"Sector '{target_sector}' is already under Sol Fleet control."
-
-        valid_targets = self.get_valid_targets()
-        if target_sector not in valid_targets:
-            return False, (
-                f"Sector '{target_sector}' is not adjacent to your territory. "
-                f"Valid targets: {', '.join(valid_targets) if valid_targets else 'None'}."
+    def register_attack(self, target_sector: str) -> None:
+        if target_sector not in SECTOR_CATALOG:
+            raise ValueError(f"Invalid sector identifier: '{target_sector}'")
+        if target_sector in self.state.controlled_sectors:
+            raise ValueError(f"Sector '{target_sector}' is already liberated and under Sol Fleet control.")
+        if not self.is_adjacent(target_sector):
+            raise ValueError(
+                f"Sector '{target_sector}' is not adjacent to your liberated territory. "
+                f"Valid tactical targets: {', '.join(self.state.valid_targets) or 'None'}"
             )
 
-        return True, "Target is valid."
+        self.state.pending_target = target_sector
+        self.state.turn_count += 1
 
-    def resolve_combat(self, target_sector: str, is_correct: bool) -> Dict[str, Any]:
-        """Updates internal status based on combat resolution."""
-        self.turn_count += 1
-        summary = {}
+    def resolve_combat(self, target_sector: str, correct: bool) -> GameState:
+        if self.state.pending_target != target_sector:
+            # If state lost or mismatched, still check adjacency
+            if not self.is_adjacent(target_sector):
+                raise ValueError(f"Cannot resolve combat on un-targeted or non-adjacent sector: {target_sector}")
 
-        if is_correct:
-            if target_sector not in self.controlled_sectors:
-                self.controlled_sectors.append(target_sector)
-            self.energy += 25
-            self.shields = min(100, self.shields + 10)
-            summary["outcome"] = "CONQUERED"
-            summary["message"] = f"Decryption key verified! {SECTOR_METADATA[target_sector]['name']} liberated."
+        if correct:
+            if target_sector not in self.state.controlled_sectors:
+                self.state.controlled_sectors.append(target_sector)
+            self.state.energy += 25
+            self.state.shields = min(100, self.state.shields + 10)
+            sector_name = SECTOR_CATALOG[target_sector].name
+            self.state.last_event = f"Victory! {sector_name} was captured. +25 Energy, +10 Shields."
         else:
-            self.shields -= 35
-            summary["outcome"] = "DEFENSE_REPUDIATED"
-            summary["message"] = f"Cyber-defense breach failed. Sol Fleet shields compromised by 35%."
+            self.state.shields = max(0, self.state.shields - 35)
+            sector_name = SECTOR_CATALOG[target_sector].name
+            self.state.last_event = f"Assault failed on {sector_name}! Enemy defenses inflicted -35 Shield damage."
 
-        # Terminal conditions evaluation
-        if len(self.controlled_sectors) >= TOTAL_SECTORS:
-            self.status = "VICTORY"
-            summary["message"] += " All galactic sectors secured. Humanity triumphs!"
-        elif self.shields <= 0:
-            self.shields = 0
-            self.status = "DEFEAT"
-            summary["message"] += " Fleet shields fully depleted. The Gatekeeper AI maintains dominance."
+        self.state.pending_target = None
 
-        # Clear pending challenge
-        self.active_challenge = None
+        # Evaluate terminal conditions
+        all_sectors = set(SECTOR_CATALOG.keys())
+        if all_sectors.issubset(set(self.state.controlled_sectors)):
+            self.state.status = "VICTORY"
+            self.state.last_event = "GALACTIC LIBERATION ACHIEVED! All sectors secured by Sol Fleet."
+        elif self.state.shields <= 0:
+            self.state.status = "DEFEAT"
+            self.state.last_event = "CRITICAL FAILURE: Shields depleted. Sol Fleet flagship destroyed."
 
-        return summary
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "controlled_sectors": self.controlled_sectors,
-            "shields": self.shields,
-            "energy": self.energy,
-            "turn_count": self.turn_count,
-            "status": self.status,
-            "valid_targets": self.get_valid_targets(),
-            "sector_metadata": SECTOR_METADATA,
-            "adjacency_graph": GALAXY_GRAPH,
-            "total_sectors": TOTAL_SECTORS,
-        }
+        self.refresh_valid_targets()
+        return self.state

@@ -369,7 +369,7 @@ async def run_harnessed_pipeline(
                 text_chunks = visible_chunks or [p.text for p in event.content.parts if p.text]
                 if text_chunks:
                     combined_text = "\n".join(text_chunks).strip()
-                    snippet = combined_text[:800] + ("..." if len(combined_text) > 800 else "")
+                    snippet = combined_text[:1600] + ("..." if len(combined_text) > 1600 else "")
                     yield {
                         "stage": "raw_response",
                         "iteration": current_iteration,

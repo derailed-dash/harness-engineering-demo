@@ -361,7 +361,7 @@ function startStream(url) {
 
     startTimer();
     
-    updateGlobalStatus('Running Stream...', 'var(--accent-cyan)');
+    updateGlobalStatus('Running...', 'var(--accent-cyan)');
     
     eventSource = new EventSource(url);
     activeEventSource = eventSource;
@@ -527,7 +527,6 @@ function handleStreamEvent(evt) {
             }
             appendFeedCard('harnessed-feed', 'Harness Gate Passed', data.message, null, true);
             if (data.scorecard) {
-                renderScorecard('harnessed-feed', data.scorecard);
                 const hScore = document.getElementById('harnessed-score');
                 if (hScore) hScore.innerText = `${data.scorecard.score.toFixed(1)} / ${(data.scorecard.max_score || 14.0).toFixed(1)}`;
             }

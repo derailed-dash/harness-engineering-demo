@@ -345,8 +345,14 @@ class RubricEvaluationGateAgent(BaseAgent):
         }
         ctx.session.state.update(state_delta)
 
+        remediation_prompt = (
+            f"{strategy_notes}\n\n"
+            "Review the LIVING MEMORY DIAGNOSTICS in your system instruction and respond "
+            "directly in Markdown with a concise Self-Healing Remediation Summary "
+            "(100-200 words) detailing the root cause and targeted code fix for each failed rubric check."
+        )
         gate_content = (
-            types.Content(role="user", parts=[types.Part.from_text(text=strategy_notes)])
+            types.Content(role="user", parts=[types.Part.from_text(text=remediation_prompt)])
             if not should_stop
             else None
         )
