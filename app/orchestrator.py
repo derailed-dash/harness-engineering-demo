@@ -295,7 +295,7 @@ class DemoOrchestrator:
 
                 # Cache this authentic run in memory so the user can explicitly save it as the replay if desired
                 has_error = any(
-                    evt.get("data", {}).get("stage") == "error" for evt in recorded_events
+                    (evt.get("data") or {}).get("stage") == "error" for evt in recorded_events
                 )
                 if len(recorded_events) >= 6 and not has_error:
                     self.last_recorded_events = list(recorded_events)
