@@ -36,6 +36,36 @@ function updateGlobalStatus(text, color = null) {
     }
 }
 
+function setSaveReplayEnabled(enabled, labelHtml = null) {
+    const saveReplayBtn = document.getElementById('btn-save-replay');
+    if (!saveReplayBtn) return;
+    saveReplayBtn.disabled = !enabled;
+    saveReplayBtn.innerHTML = labelHtml || '<i class="fa-solid fa-floppy-disk"></i> Save Replay';
+}
+
+async function saveAsReplay() {
+    const saveReplayBtn = document.getElementById('btn-save-replay');
+    if (saveReplayBtn) {
+        saveReplayBtn.disabled = true;
+        saveReplayBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+    }
+    try {
+        const res = await fetch('/api/replay/save', { method: 'POST' });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || 'Failed to save presentation replay.');
+        }
+        if (saveReplayBtn) {
+            saveReplayBtn.innerHTML = '<i class="fa-solid fa-check" style="color:var(--accent-green);"></i> Replay Saved';
+        }
+        updateGlobalStatus('Presentation Replay Saved', 'var(--accent-green)');
+    } catch (e) {
+        console.error('Failed to save presentation replay:', e);
+        setSaveReplayEnabled(true);
+        updateGlobalStatus('Save Replay Failed', 'var(--accent-red)');
+    }
+}
+
 function setComparisonRunningState(running) {
     isComparisonRunning = running;
     const compareBtn = document.getElementById('btn-compare') || document.querySelector("button[onclick*='/api/stream/compare']");
@@ -76,6 +106,7 @@ async function killComparisonRun() {
     }
     stopTimer();
     setComparisonRunningState(false);
+    setSaveReplayEnabled(false);
     updateGlobalStatus('Comparison Run Killed by User', 'var(--accent-red)');
 
     if (!unharnessedCompleted) {
@@ -236,6 +267,7 @@ async function resetUI() {
     }
     stopTimer();
     setComparisonRunningState(false);
+    setSaveReplayEnabled(false);
     clearFeeds();
 
     updateGlobalStatus('Resetting Workspaces...', 'var(--accent-cyan)');
@@ -349,6 +381,7 @@ function startStream(url) {
         eventSource = null;
     }
     stopTimer();
+    setSaveReplayEnabled(false);
     clearFeeds();
 
     isReplayMode = url.includes('replay');
@@ -563,6 +596,9 @@ function handleStreamEvent(evt) {
     } else if (evt.type === 'comparison_summary') {
         stopTimer();
         setComparisonRunningState(false);
+        if (!isReplayMode) {
+            setSaveReplayEnabled(true);
+        }
         if (evt.total_formatted_duration) {
             totalDuration = evt.total_formatted_duration;
             const totalEl = document.getElementById('metric-time');

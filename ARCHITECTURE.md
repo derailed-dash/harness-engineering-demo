@@ -38,7 +38,7 @@ To avoid confusion when reading this codebase, always distinguish between **Laye
 | `specs/cosmic_conquest_spec.md` | **Layer 1** | The canonical goal specification prompt provided to both agents. |
 | `harness/harness_context.md` | **Layer 1** | Reusable engineering context, persona, and tool protocol (`GEMINI.md` rules) injected exclusively into the Harnessed track. |
 | `harness/RUBRIC.md` | **Layer 1** | Declarative semantic rubric criteria (2.1–2.6) loaded by `app/rubric/semantic.py` as the single source of truth for LLM-as-a-Judge evaluation. |
-| `golden_tests/` | **Layer 1** | Independent 41-test acceptance suite validating both candidate workspaces and the ADK agent harness architecture. |
+| `golden_tests/` | **Layer 1** | Independent 43-test acceptance suite validating both candidate workspaces and the ADK agent harness architecture. |
 | `.github/workflows/` | **Layer 1** | Automated PR quality & golden test suite (`pr-checks.yml`), Gemini PR code review (`gemini-review.yml`), and issue triage (`gemini-triage.yml`) GitHub Actions. |
 | `scripts/deploy.sh` | **Layer 1** | Deployment automation script for Google Cloud Run with dynamic root path resolution. |
 | `media/` | **Layer 1** | Visual presentation assets and empirical benchmark run screenshots. |
@@ -171,6 +171,7 @@ The entire demonstration runs within a single container on **Google Cloud Run** 
    - `GET /`: Serves the primary split-screen comparison workbench.
    - `GET /api/spec`: Returns the raw Markdown content and title of `specs/cosmic_conquest_spec.md` to populate the in-UI Specification Viewer modal.
    - `POST /api/cancel`: Cancels any active parallel comparison tasks (`unharnessed_task` and `harnessed_task`) when the user clicks **"Kill Run"**.
+   - `POST /api/replay/save`: Explicitly persists the latest completed live comparison run (`last_recorded_events` and candidate files) to `app/replay/replay_data.json` and `snapshots/` when the user clicks **"Save Replay"**.
    - `POST /api/reset`: Cleans out all candidate workspace generated files (preserving structural directories and `README.md` files) and resets counters.
 
 2. **Real-time SSE Streams & Parallel Orchestration**:

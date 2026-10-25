@@ -178,6 +178,15 @@ def cancel_comparison() -> dict[str, Any]:
     return orchestrator.cancel_active_run()
 
 
+@app.post("/api/replay/save")
+def save_replay() -> dict[str, Any]:
+    """Explicitly save the latest completed live comparison run as the presentation replay."""
+    try:
+        return orchestrator.save_latest_run_as_replay()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @app.get("/api/stream/compare")
 async def stream_live_compare() -> StreamingResponse:
     """SSE endpoint for live model execution."""
@@ -204,6 +213,8 @@ async def stream_live_compare() -> StreamingResponse:
 @app.get("/api/stream/replay")
 async def stream_presentation_replay():
     """SSE endpoint for zero-latency presentation replay."""
+    orchestrator.last_recorded_events = []
+
     async def event_generator():
         async for event in stream_replay_events():
             payload = json.dumps(event)
