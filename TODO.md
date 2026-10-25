@@ -37,3 +37,7 @@
   - **Combined Pipeline**: Completed in `1:35`, `10,449` total tokens (`$0.0022`).
 - [x] **Synchronised Repository Documentation & Blog Series**:
   - Updated [`GEMINI.md`](GEMINI.md), [`ARCHITECTURE.md`](ARCHITECTURE.md), [`README.md`](README.md), [`harness/harness_context.md`](harness/harness_context.md), and the 4-part blog series in `/home/dazbo/localdev/blogs-and-whitepapers/articles/harness-engineering-with-google/`.
+- [x] **Explicit "Save Replay" UI Control & Endpoint (`POST /api/replay/save`)**:
+  - Removed automatic replay overwriting at the end of live comparison runs in [`app/orchestrator.py`](app/orchestrator.py) so routine live runs never replace `app/replay/replay_data.json` or `snapshots/`.
+  - Cached the latest completed live run in `DemoOrchestrator.last_recorded_events` and added `save_latest_run_as_replay()` + `POST /api/replay/save` in [`app/main.py`](app/main.py).
+  - Added the **"Save Replay"** button (`#btn-save-replay`) in [`app/templates/index.html`](app/templates/index.html) and `saveAsReplay()` in [`app/static/js/workbench.js`](app/static/js/workbench.js), plus 2 new golden tests in [`golden_tests/test_replay.py`](golden_tests/test_replay.py).

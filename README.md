@@ -118,7 +118,7 @@ harness-engineering-demo/
 │   └── output/LIVING_MEMORY.md # Dynamic living memory ledger and failure feedback log
 ├── specs/                      # Task specifications
 │   └── cosmic_conquest_spec.md # Shared application specification (what to build)
-├── golden_tests/               # Independent 41-test acceptance suite validating workspaces, UI, and ADK agents
+├── golden_tests/               # Independent 43-test acceptance suite validating workspaces, UI, and ADK agents
 ├── snapshots/                  # Layer 1: Version-controlled reference snapshots backing presentation replay
 │   ├── unharnessed/            # Reference unharnessed prototype snapshot (~9.0 / 14.0)
 │   └── harnessed/              # Reference verified harnessed candidate snapshot (14.0 / 14.0)
@@ -165,8 +165,8 @@ Because the harness is built on standard **Google Agent Development Kit (`google
 - **Side-by-Side Live Streaming**: Real-time Server-Sent Events (SSE) streaming model reasoning, tool executions, test outputs, and dynamic rubric scorecards.
 - **Dedicated Per-Panel & Global Metrics**: Real-time token counts, estimated dollar costs ($), and rubric scores displayed on each agent panel, alongside combined global counters in the top banner.
 - **Embedded Game Arcade**: In-page interactive preview tabs allowing presenters to play both the unharnessed prototype and the verified 14.0 / 14.0 harnessed game.
-- **Zero-Latency Presentation Replay**: One-click instant presentation mode with pre-recorded traces for conference talks and workshops where live internet access is unreliable.
-- **Automated CI Quality & Golden Test Gates**: GitHub Actions workflows ([`.github/workflows/pr-checks.yml`](.github/workflows/pr-checks.yml) and [`.github/workflows/gemini-review.yml`](.github/workflows/gemini-review.yml)) run `codespell`, `ruff`, `pyright`, the 41-test golden suite, and automated Gemini PR code reviews on every pull request.
+- **Zero-Latency Presentation Replay & Explicit Replay Saving**: One-click instant presentation mode with pre-recorded traces for conference talks and workshops where live internet access is unreliable. Live runs never overwrite the saved replay automatically; instead, a dedicated **"Save Replay"** button (`POST /api/replay/save`) enables after a live run finishes so you only promote a run when you want to keep it.
+- **Automated CI Quality & Golden Test Gates**: GitHub Actions workflows ([`.github/workflows/pr-checks.yml`](.github/workflows/pr-checks.yml) and [`.github/workflows/gemini-review.yml`](.github/workflows/gemini-review.yml)) run `codespell`, `ruff`, `pyright`, the 43-test golden suite, and automated Gemini PR code reviews on every pull request.
 - **Deployable to Google Cloud Run**: Containerised on Python 3.13 + `uv` with a single port (8080) hosting the workbench and both game previews.
 
 ## Getting Started
@@ -234,7 +234,7 @@ Open your browser to:
 | `make lint` | Run the full static quality suite (`codespell`, `ruff check`, and `pyright`) |
 | `make lint-fix` | Auto-fix lint and formatting issues with `ruff check --fix .` and check spelling |
 | `make typecheck` | Run `pyright` static type analysis |
-| `make test` | Run the independent 41-test golden acceptance suite (`pytest golden_tests/ -v`) |
+| `make test` | Run the independent 43-test golden acceptance suite (`pytest golden_tests/ -v`) |
 | `make verify` | Run end-to-end offline pipeline and rubric verification (`verify_demo.py`) |
 | `make docker-build` | Build the production `harness-engineering-demo` Docker container image |
 | `make docker-run` | Run the production Docker container locally on port `8080` |
@@ -295,7 +295,7 @@ When running on Google Cloud Run, the workbench automatically authenticates usin
 ## Two Execution Modes
 
 1. **Presentation Replay (Instant)**: Click **"Presentation Replay"** in the top navigation bar. Instantly streams pre-recorded comparison traces and copies pre-built candidates from `snapshots/` into `workspaces/` so both interactive game previews run immediately with zero network latency.
-2. **Run Comparison (Live) & Kill Run**: Click **"Run Comparison"** to invoke `gemini-3.8-flash` in real time concurrently across both candidate pipelines. While a comparison is running, the button toggles to **"Kill Run"**, allowing you to abort the live SSE stream and cancel background agent tasks immediately.
+2. **Run Comparison (Live), Kill Run & Save Replay**: Click **"Run Comparison"** to invoke `gemini-3.8-flash` in real time concurrently across both candidate pipelines. While a comparison is running, the button toggles to **"Kill Run"**, allowing you to abort the live SSE stream and cancel background agent tasks immediately. When a live run completes, the **"Save Replay"** button becomes enabled so you can explicitly persist that run to `app/replay/replay_data.json` and `snapshots/` on demand without losing your existing replay on routine runs.
 
 ---
 

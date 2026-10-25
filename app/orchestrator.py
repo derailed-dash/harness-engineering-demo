@@ -61,7 +61,8 @@ def save_replay_recording(
                 ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.tmp"),
             )
     except Exception as exc:
-        logger.warning("Failed to auto-save replay recording: %s", exc)
+        logger.error("Failed to save replay recording: %s", exc)
+        raise
 
 
 def clean_workspace_directory(workspace: Path) -> list[str]:
@@ -92,6 +93,30 @@ class DemoOrchestrator:
         self.unharnessed_task: asyncio.Task[Any] | None = None
         self.harnessed_task: asyncio.Task[Any] | None = None
         self._active_queue: asyncio.Queue[dict[str, Any]] | None = None
+        self.last_recorded_events: list[dict[str, Any]] = []
+
+    def save_latest_run_as_replay(
+        self,
+        unharnessed_dir: Path | None = None,
+        harnessed_dir: Path | None = None,
+        replay_path: Path | None = None,
+        snapshots_dir: Path | None = None,
+    ) -> dict[str, Any]:
+        """Explicitly persist the latest completed live comparison run as the presentation replay."""
+        if len(self.last_recorded_events) < 6:
+            raise ValueError("No completed live comparison run available to save as replay.")
+        save_replay_recording(
+            self.last_recorded_events,
+            unharnessed_dir or UNHARNESSED_DIR,
+            harnessed_dir or HARNESSED_DIR,
+            replay_path=replay_path,
+            snapshots_dir=snapshots_dir,
+        )
+        return {
+            "status": "ok",
+            "events_saved": len(self.last_recorded_events),
+            "message": "Presentation replay and candidate snapshots updated from latest live run.",
+        }
 
     def cancel_active_run(self) -> dict[str, Any]:
         """Cancel any currently running comparison tasks immediately."""
@@ -130,6 +155,7 @@ class DemoOrchestrator:
             self.cancel_active_run()
         self.is_running = False
         self.was_cancelled = False
+        self.last_recorded_events = []
         self.unharnessed_tokens = TokenMetrics()
         self.harnessed_tokens = TokenMetrics()
         cleaned_unharnessed = clean_workspace_directory(UNHARNESSED_DIR)
@@ -267,9 +293,12 @@ class DemoOrchestrator:
                 recorded_events.append(rec_summary)
                 yield summary_evt
 
-                # Persist this authentic run and its candidate files as the new presentation replay
-                if len(recorded_events) >= 6:
-                    save_replay_recording(recorded_events, UNHARNESSED_DIR, HARNESSED_DIR)
+                # Cache this authentic run in memory so the user can explicitly save it as the replay if desired
+                has_error = any(
+                    (evt.get("data") or {}).get("stage") == "error" for evt in recorded_events
+                )
+                if len(recorded_events) >= 6 and not has_error:
+                    self.last_recorded_events = list(recorded_events)
         finally:
             for task in (unharnessed_task, harnessed_task):
                 if not task.done():

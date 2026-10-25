@@ -37,6 +37,9 @@
                 <button id="btn-replay" class="btn-secondary" onclick="startStream('/api/stream/replay')" title="Instant zero-latency presentation replay">
                     <i class="fa-solid fa-bolt"></i> Presentation Replay
                 </button>
+                <button id="btn-save-replay" class="btn-secondary" onclick="saveAsReplay()" title="Save the completed live comparison run as the new Presentation Replay" disabled>
+                    <i class="fa-solid fa-floppy-disk"></i> Save Replay
+                </button>
                 <button id="btn-reset" class="btn-secondary" onclick="resetUI()" title="Reset workspaces and UI state">
                     <i class="fa-solid fa-rotate-left"></i> Reset
                 </button>
