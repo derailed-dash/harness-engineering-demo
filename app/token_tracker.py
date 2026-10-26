@@ -3,8 +3,19 @@
 Provides accurate tracking of prompt tokens, candidate tokens, and total costs in US Dollars.
 """
 
+import os
 from dataclasses import dataclass, field
 from typing import Any
+
+
+def _get_model_rates() -> tuple[float, float]:
+    """Return (input_rate_per_1m, output_rate_per_1m) in USD for the active model."""
+    model = os.getenv("MODEL_NAME", "gemini-3.8-flash").lower()
+    if "gemini-4" in model:
+        # Gemini 4 Argon standard pricing ($2.00 input / $10.00 output per 1M tokens)
+        return 2.00, 10.00
+    # Default: Gemini 3.8 Flash pricing ($0.15 input / $0.60 output per 1M tokens)
+    return 0.15, 0.60
 
 
 @dataclass
@@ -16,9 +27,14 @@ class TokenMetrics:
     estimated_cost_usd: float = 0.0
     history: list[dict[str, Any]] = field(default_factory=list)
 
-    # Gemini 3.8 Flash pricing estimates ($ per 1M tokens)
+    # Default Gemini 3.8 Flash pricing estimates ($ per 1M tokens)
     INPUT_RATE_PER_MILLION: float = 0.15
     OUTPUT_RATE_PER_MILLION: float = 0.60
+
+    def __post_init__(self) -> None:
+        in_rate, out_rate = _get_model_rates()
+        self.INPUT_RATE_PER_MILLION = in_rate
+        self.OUTPUT_RATE_PER_MILLION = out_rate
 
     def add_usage(self, prompt: int, candidate: int, label: str = "") -> None:
         """Accumulate token counts and update dollar cost."""
