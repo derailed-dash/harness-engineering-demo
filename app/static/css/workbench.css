@@ -265,35 +265,38 @@ button.is-running:hover {
   border-color: var(--accent-cyan);
 }
 
-/* Metrics Dashboard Banner (Status Row at Top of Tracks) */
+/* Pipeline Status Banner (Compact Status Row at Top of Tracks) */
 .metrics-banner {
   background: rgba(13, 18, 36, 0.95);
   border-bottom: 1px solid var(--border-color);
   border-top: none;
-  padding: 12px 28px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  padding: 6px 28px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
   flex-shrink: 0;
 }
 
 .metric-card {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
 }
 
 .metric-label {
   font-size: 0.75rem;
+  font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .metric-value {
-  font-size: 1.3rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-primary);
-  margin-top: 2px;
+  margin-top: 0;
 }
 
 /* Split View Main Layout */

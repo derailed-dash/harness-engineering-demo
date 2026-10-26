@@ -135,15 +135,6 @@ async function killComparisonRun() {
     }
 }
 
-function updateCombinedMetrics() {
-    const totalTokens = unharnessedTotalTokens + harnessedTotalTokens;
-    const totalCost = unharnessedCostUsd + harnessedCostUsd;
-    const totalTokensEl = document.getElementById('metric-total-tokens');
-    if (totalTokensEl) totalTokensEl.innerText = totalTokens.toLocaleString();
-    const totalCostEl = document.getElementById('metric-total-cost');
-    if (totalCostEl) totalCostEl.innerText = `$${totalCost.toFixed(4)}`;
-}
-
 function formatTime(seconds) {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -165,19 +156,6 @@ function startTimer() {
     timerInterval = setInterval(() => {
         const now = Date.now();
         const multiplier = isReplayMode ? replaySpeedMultiplier : 1.0;
-
-        const totalEl = document.getElementById('metric-time');
-        if (totalEl) {
-            if (totalDuration) {
-                totalEl.innerText = totalDuration;
-            } else {
-                let elapsed = ((now - startTime) / 1000) * multiplier;
-                if (targetTotalDurationSec && elapsed > targetTotalDurationSec) {
-                    elapsed = targetTotalDurationSec;
-                }
-                totalEl.innerText = formatTime(elapsed);
-            }
-        }
 
         const uTimeEl = document.getElementById('unharnessed-time');
         if (uTimeEl) {
@@ -215,7 +193,6 @@ function clearFeeds() {
 
     document.getElementById('unharnessed-feed').innerHTML = '';
     document.getElementById('harnessed-feed').innerHTML = '';
-    document.getElementById('metric-time').innerText = '0:00';
 
     const uTokens = document.getElementById('unharnessed-tokens');
     if (uTokens) uTokens.innerText = '0';
@@ -251,7 +228,6 @@ function clearFeeds() {
         if (summaryText) summaryText.innerText = '';
     }
 
-    updateCombinedMetrics();
     document.querySelectorAll('.skill-tag').forEach(tag => tag.classList.remove('active'));
 }
 
@@ -510,7 +486,6 @@ function handleStreamEvent(evt) {
             }
             const uCost = document.getElementById('unharnessed-cost');
             if (uCost) uCost.innerText = evt.metrics.formatted_cost;
-            updateCombinedMetrics();
         }
     } else if (evt.type === 'harnessed_event') {
         const data = evt.data;
@@ -591,18 +566,12 @@ function handleStreamEvent(evt) {
             }
             const hCost = document.getElementById('harnessed-cost');
             if (hCost) hCost.innerText = evt.metrics.formatted_cost;
-            updateCombinedMetrics();
         }
     } else if (evt.type === 'comparison_summary') {
         stopTimer();
         setComparisonRunningState(false);
         if (!isReplayMode) {
             setSaveReplayEnabled(true);
-        }
-        if (evt.total_formatted_duration) {
-            totalDuration = evt.total_formatted_duration;
-            const totalEl = document.getElementById('metric-time');
-            if (totalEl) totalEl.innerText = evt.total_formatted_duration;
         }
         if (evt.unharnessed_formatted_duration) {
             unharnessedDuration = evt.unharnessed_formatted_duration;

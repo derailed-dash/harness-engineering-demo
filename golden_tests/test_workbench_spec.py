@@ -18,8 +18,9 @@ def test_index_spec_content_embedded() -> None:
     assert response.status_code == 200
     html = response.text
 
-    # Loading spinner must be removed
+    # Loading spinner and confusing external ARCHITECTURE.md link must be removed
     assert "spec-modal-loading" not in html
+    assert "Read ARCHITECTURE.md" not in html
 
     # Spec elements must be present
     assert 'id="spec-content-data"' in html
@@ -28,6 +29,10 @@ def test_index_spec_content_embedded() -> None:
     assert 'id="spec-raw-code"' in html
 
     # Per-panel timing and preview elements must be present
+    assert 'id="metric-status"' in html
+    assert 'id="metric-time"' not in html
+    assert 'id="metric-total-tokens"' not in html
+    assert 'id="metric-total-cost"' not in html
     assert 'id="unharnessed-time"' in html
     assert 'id="harnessed-time"' in html
     assert 'id="harnessed-preview-ready"' in html
